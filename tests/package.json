@@ -1,0 +1,11 @@
+{
+	"name": "mock-llm-server-duality-tests",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"duality": "node duality.mjs"
+	},
+	"dependencies": {
+		"@earendil-works/pi-ai": "file:../pi-mono/packages/ai"
+	}
+}

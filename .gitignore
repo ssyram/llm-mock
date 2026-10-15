@@ -1,0 +1,29 @@
+# Private working state and captured conversations
+.working-stack/
+.pi/
+.tmp-*/
+**/.tmp-*
+**/.pi/mock-corpus/
+captures/
+mounts.json
+sessions/
+*.log
+*.pid
+.DS_Store
+
+# Build output and dependencies
+node_modules/
+target/
+
+# Private orchestration history
+scripts/*.workflow.js
+
+# Regenerable historical evidence may contain complete real transcripts
+/tests/*.json
+!/tests/package.json
+!/tests/package-lock.json
+!/tests/property-baseline.json
+!/tests/property-p1-counterexamples.json
+/tests/*.jsonl
+/tests/*.jsonl.gz
+/tests/*-exit.txt

@@ -1,0 +1,105 @@
+# W-08 后第二波：property / 不动点测试
+
+> 发布验证重跑：仅使用公开合成输入，私有语料不分发。以下时间是本次验证运行元数据，不是原始会话时间；旧历史 Git 缺失备注已过期，当前发布状态见 [release-sanitize.md](release-sanitize.md)。
+
+## 冻结定义与数学表述
+
+唯一期待来源：`irreversibility-atlas.md`（含 W-07），及 `api/` 八份权威页覆盖的十协议规格；`bedrock-mistral.md` 是退役存根。执行对象限四家族根 OCC / Responses / Anthropic / Google；不把四根结果外推到十协议。只读 TS 根：`<pi-mono>/packages/ai/src`。
+
+固定目标模型 M、原生 stream 选项 O，令 V_p=pi convert，D_p=mock decode，Q_p=D_p∘V_p；K_p 为冻结 §4 的独立请求规则合成 oracle，R_p 为冻结回复 oracle，B(X) 是 UnifiedRequest→TranscriptContext 无损形状桥：取 X.context，并给 Rust 无标签 system/user/toolResult 块补 TS 的 type=text/image（按 text 字段是否存在判别）；模型/选项固定，不把解码身份重标成同模型，也不更改块值。I=JSON 值形状等价：对象键序不计，数组顺序和所有已定义字段均比较；仅 OCC/Responses thinkingSignature 按 JSON 值比较。不删除 usage、身份、工具 ID、空块或签名以求通过。
+
+| 性质 | 字面化断言 | 规则依据 |
+|---|---|---|
+| P1 首次投影后的规则合成一致性 | X=Q_p(C)，Q_p(B(X)) ≡_I K_p(B(X))；保留 rawIdempotent = [Q_p(B(X)) ≡_I X] 及 rawDiffs，不再假定全域字面不动点 | atlas G5；各根 §4 的 Q-COMPOSE 定义；f4-p1-resolution.md |
+| P2 encode–parse 帧不动点 | W=encode_p(A)，E=parse_p(W)，encode_p(E) ≡_F W；F 保留帧顺序、事件/其他行、data JSON 值及 [DONE]，不比较 JSON 键序/网络分片 | OCC A01.09–17；Responses G08–G15；Anthropic C15–C18；Google G22–G26 |
+| P3 canonical 合成闭包 | Q_p(C) ≡_I K_p(C)，且 K_p(B(Q_p(C))) ≡_I K_p(B(K_p(C)))；同时核验第一轮 oracle 与 decode，防止单靠闭包吞共同错误 | atlas K3/K8；各根 §4，复用 W-08 独立 canonical oracle，不调用 decoder 推导期望 |
+| P4 跨家族闭包 | 对 p≠q，X=Q_p(C)，Y=Q_q(B(X))，要求 Y ≡_I K_q(B(X)) 且 Q_q(B(Y)) ≡_I Y；即落在冻结目标 canonical 投影内且再次停留，不要求跨协议恢复 L/P 字段 | atlas G1–G3、K3/K7；目标根 §4。四根全部 12 个有向对 |
+
+P1 按 owner 裁决演进：这是对首次投影后再转换的规则一致性检查，不声称再次输出已到固定点。首次 Q 无值时不满足 P1 前提，定义域拒绝作为 expected-rejection/domain finding 保留分母，不计通过。原24反例见 tests/property-p1-counterexamples.json。D/L/P 是已声明投影，不意味着投影天然幂等。P2 的左侧第二次编码使用真实 parser 输出，绝不替换为 R_p(A)；R_p(A) 仅独立核验 parser。P4 的目标投影不是“保留源协议全部信息”；不存在冻结的跨协议无损统一 canonical。所有非相等、输入域拒绝、oracle 异常、capture/HTTP/超时分别留作 finding；输入拒绝不算性质通过，也不虚称 transport T。下表分母包含失败/异常，不静默跳过。
+
+## 执行与证据
+
+`node tests/property.mjs`（默认四根；可追加 alias/API 仅用于定向复现）。语料来自 `loadCorpora/corpusContexts/corpusReplies`；合成来自既有 synthetic/additional/W-06/W-08，以及固定 seed 的生成器（1–12，每根相同可复现 seed 域）。每条记录完成即同步写 `tests/property-results.json` 和本文，含完整 expected/actual/diffs；异常保留阶段及已有证据。真实本地 HTTP、生产 Rust encoder/decoder、只读 TS converter/parser；非外网供应商验证。
+
+比较帧使用同一进程临时包装 global fetch 只读克隆响应体（Google 禁止独立 options.fetch）；先读完克隆再交付原响应，防止 SDK 在 failed 事件后结束读取而取消抓帧；每次恢复 fetch，未覆写 payload/响应，原响应仍交原 SDK parser。这验证完整编码帧，不验证网络分片/流式时序。每次请求 10 秒 signal；整套 28 分钟 watchdog（给任务 30 分钟硬限留清理余量）。cargo/node 若发生环境阻塞，按 30 秒等待重试；本轮完整运行未发生此类阻塞，内容失败不改期待、不重试成通过。
+
+开始：2026-10-15T10:13:15.402Z；最近落盘：2026-10-15T10:13:43.599Z；状态：completed。
+
+## 每条性质通过率
+
+| 性质 | 根/源→目标 | 通过/总数 | 通过率 | 失败（其中异常/阻断） |
+|---|---|---:|---:|---:|
+| P1 | openai-completions | 31/31 | 100.00% | 0（0） |
+| P1 | openai-responses | 30/31 | 96.77% | 1（1） |
+| P1 | anthropic-messages | 30/30 | 100.00% | 0（0） |
+| P1 | google-generative-ai | 31/31 | 100.00% | 0（0） |
+| P1 | 合计 | 122/123 | 99.19% | 1（1） |
+| P2 | openai-completions | 21/28 | 75.00% | 7（0） |
+| P2 | openai-responses | 3/25 | 12.00% | 22（0） |
+| P2 | anthropic-messages | 2/39 | 5.13% | 37（0） |
+| P2 | google-generative-ai | 22/27 | 81.48% | 5（0） |
+| P2 | 合计 | 48/119 | 40.34% | 71（0） |
+| P3 | openai-completions | 31/31 | 100.00% | 0（0） |
+| P3 | openai-responses | 30/31 | 96.77% | 1（1） |
+| P3 | anthropic-messages | 30/30 | 100.00% | 0（0） |
+| P3 | google-generative-ai | 31/31 | 100.00% | 0（0） |
+| P3 | 合计 | 122/123 | 99.19% | 1（1） |
+| P4 | openai-completions → openai-responses | 30/31 | 96.77% | 1（1） |
+| P4 | openai-completions → anthropic-messages | 31/31 | 100.00% | 0（0） |
+| P4 | openai-completions → google-generative-ai | 23/31 | 74.19% | 8（0） |
+| P4 | openai-responses → openai-completions | 30/31 | 96.77% | 1（1） |
+| P4 | openai-responses → anthropic-messages | 30/31 | 96.77% | 1（1） |
+| P4 | openai-responses → google-generative-ai | 30/31 | 96.77% | 1（1） |
+| P4 | anthropic-messages → openai-completions | 30/30 | 100.00% | 0（0） |
+| P4 | anthropic-messages → openai-responses | 28/30 | 93.33% | 2（1） |
+| P4 | anthropic-messages → google-generative-ai | 29/30 | 96.67% | 1（1） |
+| P4 | google-generative-ai → openai-completions | 31/31 | 100.00% | 0（0） |
+| P4 | google-generative-ai → openai-responses | 30/31 | 96.77% | 1（1） |
+| P4 | google-generative-ai → anthropic-messages | 31/31 | 100.00% | 0（0） |
+| P4 | 合计 | 353/369 | 95.66% | 16（7） |
+
+P1 原始字面不动点：99/123；非幂等：23；定义域 finding：1。
+
+
+## 样本覆盖
+
+| 根 | Q 语料/合成（含seed） | R 语料/合成（含seed） |
+|---|---:|---:|
+| openai-completions | 0/31 | 0/28 |
+| openai-responses | 0/31 | 0/25 |
+| anthropic-messages | 0/30 | 0/39 |
+| google-generative-ai | 0/31 | 0/27 |
+
+## Findings（同类聚合；逐例完整差异见 JSON）
+
+- **P4/openai-completions→google-generative-ai/compare/stability**：8 例；首例 `syn-multi-toolcall`。["stability: $.context.messages: expected length 4, got 6"]。
+- **P4/openai-completions→openai-responses/target-decode/expected exactly 1 capture file, got 0**：1 例；首例 `w06-unicode-session`。["expected exactly 1 capture file, got 0: ; SDK: Cannot convert argument to a ByteString because the character at index 0 has a value of 55357 which is greater than 255."]。
+- **P2/openai-completions/compare/frames**：7 例；首例 `w06-r-text-signatures`。["frames: $: expected length 5, got 4"]。
+- **P1/openai-responses/domain-finding/expected-rejection/domain finding**：1 例；首例 `w06-unicode-session`。["expected-rejection/domain finding: Cannot convert argument to a ByteString because the character at index 0 has a value of 55357 which is greater than 255."]。
+- **P3/openai-responses/first-decode/expected exactly 1 capture file, got 0**：1 例；首例 `w06-unicode-session`。["expected exactly 1 capture file, got 0: ; SDK: Cannot convert argument to a ByteString because the character at index 0 has a value of 55357 which is greater than 255."]。
+- **P4/openai-responses→openai-completions/source-decode/expected exactly 1 capture file, got 0**：1 例；首例 `w06-unicode-session`。["expected exactly 1 capture file, got 0: ; SDK: Cannot convert argument to a ByteString because the character at index 0 has a value of 55357 which is greater than 255."]。
+- **P4/openai-responses→anthropic-messages/source-decode/expected exactly 1 capture file, got 0**：1 例；首例 `w06-unicode-session`。["expected exactly 1 capture file, got 0: ; SDK: Cannot convert argument to a ByteString because the character at index 0 has a value of 55357 which is greater than 255."]。
+- **P4/openai-responses→google-generative-ai/source-decode/expected exactly 1 capture file, got 0**：1 例；首例 `w06-unicode-session`。["expected exactly 1 capture file, got 0: ; SDK: Cannot convert argument to a ByteString because the character at index 0 has a value of 55357 which is greater than 255."]。
+- **P2/openai-responses/compare/frames**：22 例；首例 `reply-text-stop`。["frames: $[4].data.response.usage.output_tokens_details: unexpected {\"reasoning_tokens\":0}"]。
+- **P4/anthropic-messages→openai-responses/target-decode/expected exactly 1 capture file, got 0**：1 例；首例 `w06-unicode-session`。["expected exactly 1 capture file, got 0: ; SDK: Cannot convert argument to a ByteString because the character at index 0 has a value of 55357 which is greater than 255."]。
+- **P4/anthropic-messages→google-generative-ai/target-decode/expected exactly 1 capture file, got 0**：1 例；首例 `fuzz-s5`。["expected exactly 1 capture file, got 0: ; SDK: contents are required"]。
+- **P4/anthropic-messages→openai-responses/compare/stability**：1 例；首例 `fuzz-s9`。["stability: $.context.messages[4].content[1].textSignature: expected \"{\\\"v\\\":1,\\\"id\\\":\\\"msg_pi_4\\\"}\", got \"{\\\"v\\\":1,\\\"id\\\":\\\"msg_pi_3_1\\\"}\""]。
+- **P2/anthropic-messages/compare/frames**：37 例；首例 `reply-text-stop`。["frames: $[0].data.message.usage.cache_creation: unexpected {\"ephemeral_1h_input_tokens\":0}","frames: $[4].data.usage.cache_creation: unexpected {\"ephemeral_1h_input_tokens\":0}"]。
+- **P4/google-generative-ai→openai-responses/target-decode/expected exactly 1 capture file, got 0**：1 例；首例 `w06-unicode-session`。["expected exactly 1 capture file, got 0: ; SDK: Cannot convert argument to a ByteString because the character at index 0 has a value of 55357 which is greater than 255."]。
+- **P2/google-generative-ai/compare/frames**：5 例；首例 `w06-r-text-signatures`。["frames: $: expected length 3, got 2"]。
+
+## 结论解释（不扩大为修复决策）
+
+- P1 的 rawIdempotent/rawDiffs 保留字面不动点反例：decoder 默认身份使下一轮不再满足 sameModel，导致签名/思考/ID 持续投影；清洗后的空块也可能二轮过滤。统一期待是冻结 K 对 B(first) 的一次规则合成，不按案例名豁免差异、不改写真实输入。域拒绝不计通过。
+- P2 比较的是帧而非仅最终文本：OCC 同型块/重复调用可合并，Responses parser 补 reasoning=0 后会新增 usage 字段，Anthropic 缺省 1h=0 与请求身份 model 会改变再次编码的 usage/model。Google 条件 ID 发射与邻块合并也能改变帧。JSON 值等价不意味着帧序列不动点。
+- P3 单轮解码和独立规则的合成闭包一起检查；异常仍按失败计账。Unicode session 的 ByteString 预检无 capture，不称内容差异或 transport T。
+- P4 分开保留 projection 与 stability 差异。目标的单轮投影正确仍不蕴含再次稳定；例如 Google 无 ID 模型用 name 回填多个调用，重复结果对应关系可使下一轮补更多 No result provided。输入被投影至空 contents 时也可能在 Google SDK 本地拒绝。
+- Responses opaque reasoning_content 签名为冻结输入域拒绝，oracle 抛错保留为 finding；未实现未批准的 F1 签名降级。没有把域拒绝归为通过或替换成纯文本。
+
+## 验证、限制与交接
+
+- 本轮按 owner 裁决修复统一 Codex 编码出口、P1 合成期待及定义域；原24条反例保存在 property-p1-counterexamples.json。TS 权威源码只读，完整哈希校验见 f4-p1-readonly-hashes.json。
+- 历史阶段曾无 Git；本次已初始化并按发布审计执行暂存/提交。
+- W-07 Bedrock/Mistral/Codex 专项不属本轮四根；冻结演进作为边界保留。输入域拒绝同样计入失败。
+- 首轮未加 Rust 无标签块→TS 判别标签桥，结果已保留 property-first-run-results.json；该轮无效，不混入最终通过率。桥仅添加 type，不改 payload 值/身份。
+- P1 统一比较 Q_p(B(first)) 与 K_p(B(first))；rawIdempotent/rawDiffs 保留字面不动点反例。定义域拒绝仍为 finding，不计通过。P4 未改变。
