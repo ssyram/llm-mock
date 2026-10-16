@@ -42,7 +42,7 @@ export async function requestDirection(api, model, server, cases, canonicalFn, r
 			const expected = canonicalFn(tc, caseModel, options);
 			const diffs = compareRequest(cap.record.request, expected, api, started, Date.now());
 			if (cap.record.api !== api) diffs.unshift(`capture API: expected ${api}, got ${cap.record.api}`);
-			results.push({ api, dir: "req", name: tc.name, ...(tc.mount ? { mount: tc.mount } : {}), ok: diffs.length === 0, diffs, expected, actual: cap.record.request });
+			results.push({ api, dir: "req", name: tc.name, ...(tc.mount ? { mount: tc.mount } : {}), ...(tc.provenance ? { provenance: tc.provenance } : {}), ok: diffs.length === 0, diffs, expected, actual: cap.record.request });
 		} catch (e) {
 			results.push({ api, dir: "req", name: tc.name, ok: false, diffs: [String(e?.message ?? e).slice(0, 800)], expected: null, actual: null });
 		}
@@ -66,7 +66,7 @@ export async function replyDirection(api, model, server, results, cases, options
 			phase = "compare";
 			const diffs = compareReply(got, expected, deepDiff, started, Date.now());
 			if (record.api !== api) diffs.unshift(`capture API: expected ${api}, got ${record.api}`);
-			results.push({ api, dir: "reply", name: tc.name, ok: diffs.length === 0, diffs, expected, actual: got });
+			results.push({ api, dir: "reply", name: tc.name, ...(tc.provenance ? { provenance: tc.provenance } : {}), ok: diffs.length === 0, diffs, expected, actual: got });
 		} catch (e) {
 			results.push({ api, dir: "reply", name: tc.name, phase, ok: false, diffs: [String(e?.message ?? e).slice(0, 800)], expected: null, actual: null });
 		}

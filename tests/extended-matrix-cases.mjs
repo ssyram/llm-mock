@@ -33,8 +33,8 @@ export function additionalContexts(model) {
 }
 
 export function corpusReplies(corpora) {
-	return corpora.flatMap(({ name, messages }) => messages.flatMap((message, index) => message.role === "assistant"
-		? [{ name: `reply-corpus-${name}-${index}`, message: clone(message) }] : []));
+	return corpora.flatMap(({ name, messages, provenance }) => messages.flatMap((message, index) => message.role === "assistant"
+		? [{ name: `reply-corpus-${name}-${index}`, message: clone(message), ...(provenance ? { provenance } : {}) }] : []));
 }
 
 export function additionalReplies(model, base) {

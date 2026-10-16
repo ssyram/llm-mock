@@ -18,7 +18,7 @@ pi-ai 在客户端方向维护「统一 Message ⇄ 各厂商 wire」的全部�
 
 > 🚀 **新手从这里开始**：[hands-on-tutorial.md](docs/design/mock-llm-server/hands-on-tutorial.md) —— 从零到多轮/工具/错误路径的全流程实测教程（每步真实命令＋输出，经新用户盲测校验）。
 
-## 支持的协议（挂载端口上全部可用）
+## 支持的协议
 
 | 家族 | harness 侧 baseURL | 说明 |
 |---|---|---|
@@ -27,7 +27,8 @@ pi-ai 在客户端方向维护「统一 Message ⇄ 各厂商 wire」的全部�
 | Anthropic Messages | `http://127.0.0.1:18000/<name>` | |
 | Google Generative AI | `http://127.0.0.1:18000/<name>/v1beta` | |
 | pi-messages | `http://127.0.0.1:18000/<name>` | |
-| azure / codex / vertex / bedrock / mistral | 见 `docs/design/mock-llm-server/mount-routing.md` | bedrock 走二进制 EventStream |
+| azure / codex / vertex / mistral | 见 `docs/design/mock-llm-server/mount-routing.md` | Vertex 接纳 publisher 资源路径 |
+| Bedrock | `http://127.0.0.1:18000`（legacy registry 根路由） | `/model/{id}/converse-stream`，二进制 EventStream；不属于通用挂载 |
 
 ## 运行时依赖
 
@@ -120,6 +121,7 @@ cargo test
 - Python、zstd 及客户端有各自的依赖要求，不作为无依赖核心单测的隐含前提。缺 Python、Node（最低 23）、pi-ai 源码或依赖、Pi、OpenCode 时，对受影响的测试组明确输出 `WARNING: SKIP ... NOT VERIFIED`；缺 zstd CLI／Node 原生 zstd API 时跳过依赖 Codex 压缩的组。无关测试继续运行；已安装工具损坏、参照版本不符／被修改及断言失败均使 `cargo test` 失败。跳过不等于证明对偶，正式开发仍须取得约定的协议对偶证据。
 - 官方参照是 `vendor/pi-mono` Git submodule：[earendil-works/pi](https://github.com/earendil-works/pi)，**v1.2.0**，固定 commit **`06a466935536f8c9bcacb2d5efc0fc021be1bdff`**。pi-messages 属于同一源码树。Git gitlink 锁源码，submodule 内的 `package-lock.json` 锁 npm 依赖；升级后须重跑矩阵。旧 fork commit `371cc25` 的历史报告不证明此官方版本已通过。
 - 日志和新生成证据统一写入 `target/test-artifacts/`（可用 `MOCK_TEST_ARTIFACTS` 指定），不覆盖历史报告。独立 Node 命令可用 `MOCK_SERVER_BIN` 选择服务端；Cargo 自动传入本轮构建的可执行文件，兼容自定义 target 目录。缺私有语料时明确跳过对应会话，仍运行合成用例。
+- `tests/fixtures/corpus-discovery/` 的公开脱敏片段携带来源进入双方向矩阵和property，不伪造完整会话。Property逐次对照独立canonical；原始帧／投影变化仍记录为观察，不假定有损转换天然不动，见[性质合同](docs/design/mock-llm-server/property-tests.md)。
 - 矩阵分别统计成功 `matched`、严格断言的 `expected rejections` 和失败；预期拒绝不计为成功对偶。Codex `instructions` 的孤立 surrogate 在服务端按 canonical 删除，净化为空时用默认系统提示；合法 emoji、U+FFFD、字面 `\\ud800` 和其他 JSON 字段不受此净化影响，详见 `api/family-variants.md`。
 - 语料捕获插件 `extensions/llm-corpus-capture.ts`：挂到真实会话即存统一 Message 语料（采语料才需要真模型凭据；mock 本身永远不需要）
 

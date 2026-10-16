@@ -56,7 +56,7 @@ async fn serve(
                 continue;
             }
         };
-        let req = match Api::Codex.decode(&path, &request.to_string(), &decode_headers) {
+        let (req, signal) = match Api::Codex.decode(&path, &request.to_string(), &decode_headers) {
             Ok(req) => req,
             Err(error) => {
                 if !send_error(&mut socket, "invalid_request", &error).await {
@@ -84,6 +84,7 @@ async fn serve(
             Api::Codex,
             Api::Codex.key(&headers),
             req,
+            signal,
             spec.clone(),
         );
         let success = response.status().is_success();

@@ -1,8 +1,9 @@
 import { writeFileSync } from "node:fs";
 import { artifactPath } from "./test-artifacts.mjs";
 import { matrixSummaryText } from "./matrix-summary.mjs";
+import { markGeneratedSessionId } from "./generated-session-id.mjs";
 import { startServer, freePort } from "./harness.mjs";
-import { loadCorpora, corpusContexts, syntheticContexts, replyCases } from "./corpus.mjs";
+import { loadAllCorpora, corpusContexts, syntheticContexts, replyCases } from "./corpus.mjs";
 import { additionalContexts, corpusReplies, additionalReplies } from "./extended-matrix-cases.mjs";
 import { makeModel } from "./models-shared.mjs";
 import { canonicalCodex, canonicalVertex } from "./canonical-family-variants.mjs";
@@ -13,7 +14,7 @@ import { withVertexAdc } from "./vertex-adc-fixture.mjs";
 import { codex } from "./pi-ai-imports.mjs";
 
 const results=[];
-const corpora=loadCorpora();
+const corpora=loadAllCorpora();
 const startedAt=new Date().toISOString();
 const save=()=>writeFileSync(artifactPath("transport-unblock-variants.json"),JSON.stringify({startedAt,updatedAt:new Date().toISOString(),results},null,2));
 const port=await freePort();const server=await startServer(port);
@@ -23,7 +24,7 @@ async function run(variant,api,canonical,options) {
  const local=[];
  const transportCanonical=(context,model,options)=>{
   const expected=canonical(context,model,options);
-  if(variant==="codex-websocket"&&options.cacheRetention==="none")expected.options.sessionId="@pi-generated:uuidv7";
+  if(variant==="codex-websocket"&&options.cacheRetention==="none")markGeneratedSessionId(expected.options);
   return expected;
  };
  await requestDirection(api,model,server,cases,transportCanonical,local);

@@ -18,7 +18,7 @@ pi-ai already does all the dirty work of "unified Message ⇄ vendor wire" on th
 
 > 🚀 **Start here**: [hands-on-tutorial.md](docs/design/mock-llm-server/hands-on-tutorial.md) — a full walkthrough from zero to multi-turn / tool round-trips / error paths, with real commands and outputs (validated by a fresh-user blind test).
 
-## Supported protocols (all available on every mount)
+## Supported protocols
 
 | Family | harness-side baseURL | Notes |
 |---|---|---|
@@ -27,7 +27,8 @@ pi-ai already does all the dirty work of "unified Message ⇄ vendor wire" on th
 | Anthropic Messages | `http://127.0.0.1:18000/<name>` | |
 | Google Generative AI | `http://127.0.0.1:18000/<name>/v1beta` | |
 | pi-messages | `http://127.0.0.1:18000/<name>` | |
-| azure / codex / vertex / bedrock / mistral | see `docs/design/mock-llm-server/mount-routing.md` | bedrock uses binary EventStream |
+| azure / codex / vertex / mistral | see `docs/design/mock-llm-server/mount-routing.md` | Vertex accepts publisher resource paths |
+| Bedrock | `http://127.0.0.1:18000` (legacy registry root) | `/model/{id}/converse-stream`, binary EventStream; not a generic mount |
 
 ## Runtime dependencies
 
@@ -119,6 +120,7 @@ cargo test
 - Python, zstd, and client tools retain their own dependency requirements; they are not implicit prerequisites for the core unit suite. Missing Python, Node (minimum 23), pi-ai reference/dependencies, Pi, or OpenCode produces explicit per-group `WARNING: SKIP ... NOT VERIFIED` messages. Missing zstd CLI/native Node APIs skips groups that require Codex compression. Independent groups still run; installed-but-broken tools, a mismatched/modified reference, and test failures make `cargo test` fail. A skip is never proof of equivalence; development must establish the declared protocol duality before claiming correctness.
 - The official reference is the `vendor/pi-mono` Git submodule: [earendil-works/pi](https://github.com/earendil-works/pi), **v1.2.0**, commit **`06a466935536f8c9bcacb2d5efc0fc021be1bdff`**. pi-messages is part of that same source tree. The gitlink pins the source; the submodule's `package-lock.json` pins npm dependencies. Upgrades require rerunning the matrix; old reports against fork commit `371cc25` do not establish results for this official pin.
 - Logs and generated evidence go to `target/test-artifacts/` (override with `MOCK_TEST_ARTIFACTS`), never over historical reports. `MOCK_SERVER_BIN` selects the server executable for standalone Node commands; Cargo supplies its freshly built binary automatically, including custom target directories. Missing private corpus sessions are explicitly skipped; synthetic cases still run.
+- Public sanitized excerpts in `tests/fixtures/corpus-discovery/` participate in both matrix directions and properties with provenance; they are fragments, not fabricated complete conversations. Property checks assert independent canonical consistency for each conversion; raw frame/projection changes remain observations, not assumed fixed points. See [property contracts](docs/design/mock-llm-server/property-tests.md).
 - Matrix output separates successful `matched` cases, strictly asserted `expected rejections`, and failures; an expected rejection is not a successful duality comparison. Codex `instructions` drops unpaired surrogates at the server boundary, using the canonical default prompt if cleaning empties it; valid emoji, U+FFFD, literal `\\ud800`, and other JSON fields are unaffected. See `api/family-variants.md`.
 - Corpus capture plugin `extensions/llm-corpus-capture.ts`: mount into a real session to capture unified-Message corpus (only corpus collection needs real model credentials; the mock itself never does)
 

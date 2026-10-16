@@ -1,7 +1,8 @@
 import { deepDiff } from "./harness.mjs";
+import { expectsGeneratedSessionId } from "./generated-session-id.mjs";
 
 export function compareRequest(actual, expected, api, started, ended) {
- if(expected.options?.sessionId!=="@pi-generated:uuidv7")return deepDiff(actual,expected,[],"$",[],api);
+ if(!expectsGeneratedSessionId(expected.options))return deepDiff(actual,expected,[],"$",[],api);
  const id=actual.options?.sessionId;
  const matches=typeof id==="string"&&/^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
  const timestamp=matches?Number.parseInt(id.replaceAll("-","").slice(0,12),16):NaN;

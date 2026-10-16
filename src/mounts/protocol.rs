@@ -41,46 +41,54 @@ impl Api {
         path: &str,
         body: &str,
         headers: &HeaderMap,
-    ) -> Result<UnifiedRequest, String> {
+    ) -> Result<(UnifiedRequest, Option<String>), String> {
         let hdrs = pairs(headers);
         match self {
             Self::Responses => {
-                return openai_responses::decode::decode_request(body, &hdrs).map(|(r, _)| r)
+                return openai_responses::decode::decode_request(body, &hdrs)
+                    .map(|(r, info)| (r, info.session_signal))
             }
             Self::Codex => {
-                return openai_codex_responses::decode::decode_request(body, &hdrs).map(|(r, _)| r)
+                return openai_codex_responses::decode::decode_request(body, &hdrs)
+                    .map(|(r, info)| (r, info.session_signal))
             }
             Self::Azure => {
-                return azure_openai_responses::decode::decode_request(body, &hdrs).map(|(r, _)| r)
+                return azure_openai_responses::decode::decode_request(body, &hdrs)
+                    .map(|(r, info)| (r, info.session_signal))
             }
             _ => {}
         }
         let value: Value = serde_json::from_str(body).map_err(|e| e.to_string())?;
-        match self {
+        let request = match self {
             Self::Completions => openai_completions::decode::decode(
                 &value,
                 header(headers, "x-session-id")
                     .or_else(|| header(headers, "x-session-affinity"))
                     .or_else(|| header(headers, "x-client-request-id")),
             ),
-            Self::Anthropic => anthropic_messages::decode_request(
-                &value,
-                &anthropic_messages::WireHeaders {
-                    x_api_key: header(headers, "x-api-key"),
-                    authorization: header(headers, "authorization"),
-                    x_session_affinity: header(headers, "x-session-affinity"),
-                    x_session_id: header(headers, "x-session-id"),
-                },
-            )
-            .map(|d| d.request),
+            Self::Anthropic => {
+                return anthropic_messages::decode_request(
+                    &value,
+                    &anthropic_messages::WireHeaders {
+                        x_api_key: header(headers, "x-api-key"),
+                        authorization: header(headers, "authorization"),
+                        x_session_affinity: header(headers, "x-session-affinity"),
+                        x_session_id: header(headers, "x-session-id"),
+                    },
+                )
+                .map(|decoded| (decoded.request, decoded.info.session_signal))
+            }
             Self::Google => google_generative_ai::decode::decode_request(path, &value),
             Self::Vertex => google_vertex::decode::decode_request(path, &value),
             Self::Mistral => {
-                mistral_conversations::decode::decode_request(&value, &hdrs).map(|(r, _)| r)
+                return mistral_conversations::decode::decode_request(&value, &hdrs)
+                    .map(|(r, info)| (r, info.session_signal))
             }
             Self::Pi => pi_messages::decode(&value),
             _ => unreachable!(),
-        }
+        }?;
+        let signal = request.options.session_id.clone();
+        Ok((request, signal))
     }
 
     pub fn encode(self, message: &AssistantMessage) -> Result<Vec<String>, String> {
@@ -121,7 +129,8 @@ pub fn path_api(path: &str) -> Option<Api> {
         "/openai/v1/responses" => Some(Api::Azure),
         "/codex/responses" | "/backend-api/codex/responses" => Some(Api::Codex),
         _ if (path.starts_with("/v1/") || path.starts_with("/v1beta/"))
-            && path.contains("/publishers/google/models/") =>
+            && path.contains("/publishers/")
+            && path.contains("/models/") =>
         {
             Some(Api::Vertex)
         }

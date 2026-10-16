@@ -25,7 +25,7 @@
 2. **保留序列与来源差别。** extension JSONL 保留 `capturedAt` 包装；原生 session 提取只保留 `message`，不伪造 system 或 capturedAt。沿 `parentId` 验证选中消息同链，跳过非 Message 的 custom 元数据。优先完整工具往返；若只是连续片段，标明没有开场/收尾，不能自称完整请求上下文。不要拼接分支、补写模型答案或漏配工具结果。
 3. **按原先维度扩充，而非为每个协议重新付费。** 对比 `tests/corpus.mjs` 与现有 fixtures，挑 thinking 在工具前/后、混合 text/thinking/toolCall、多轮异构工具、工具错误、provider 错误等差异。历史批次已记录但未分发的形状，应称“新增可交付样本”，不能称首次发现。图片/音频等没有真实来源时标缺口；按原建议构造的 fuzz 输入必须独立标成合成，不能算真实捕获。
 4. **先脱敏，再落交付目录。** 原始文件只读；自由正文全部替换，而非只靠密钥正则。provider/model、路径/命令、账号、URL、调用与响应标识、时间及签名载荷一并替换；相同工具 ID 保持同一映射。保留 role/type、字段/数组形状、工具名和参数键、块顺序、stopReason/isError、错误分类；签名 JSON 仍是相同结构的 JSON 字符串，但不保留真实加密载荷。不要 `git add -f` 私有原始捕获。
-5. **素材验证与协议验证分开。** 逐行解析、形状对比、配对、脱敏白名单、输出哈希与可重复导出是素材验证。以后若接入对偶矩阵，仍须用锁定适配器分别验证 request/reply；同一 Message 能再编码不保证跨 API 签名有效。不得为了语料让 canonical/失败期待变绿。
+5. **素材验证与协议验证分开。** 逐行解析、形状对比、配对、脱敏白名单、输出哈希与可重复导出是素材验证。接入对偶矩阵后，仍用锁定适配器分别验证 request/reply；同一 Message 能再编码不保证跨 API 签名有效。不得为了语料让 canonical/失败期待变绿。
 
 如未来另获真实模型调用授权，继续使用本文加载方式及 batch 3/4 的短会话命令，先查可用模型/认证，分别采工具与推理形态；凭据不 ready 则记录并跳过。**本次仅离线复用，无收费模型请求、认证读取、外部账号或全局配置改动。** 已采素材也不代表原生目标协议的 wire 捕获。
 
@@ -43,7 +43,7 @@
 
 原生片段 assistant entry 分别为 `c3c87937`、`3aa9baa3`；L30–32 是 custom 元数据而非统一 Message。该片段起于 assistant、止于工具结果，所有工具配对完整，但没有 user/system/最终回答，**不应直接作为完整对话或完整 request case**。原生 session 格式按实际保留，不声称这些消息由捕获扩展产生。
 
-本次只新增独立素材，不修改 `tests/corpus.mjs` 的 18 场私有加载、对偶矩阵或其 4 项保留拒绝。batch 3 的这四场此前未编入该加载清单；“新增”指可分发素材与组合，不声称旧批次没见过这些形状。官方参照仍为 `vendor/pi-mono` v1.2.0 / `06a466935536f8c9bcacb2d5efc0fc021be1bdff`；下文历史采集版本记录原样保留。
+首次素材交付只建立独立文件；现已由 `tests/discovered-corpora.mjs` 校验manifest哈希并加载，经 `loadAllCorpora()` 进入十协议request/reply矩阵、transport和四根property。5份均以片段标识和provenance保留原顺序，不补写user/system或宣称完整会话；8条assistant也逐条作为reply素材。18场私有加载的缺失/损坏规则不变。batch 3四场的“新增”指可分发素材与组合，不声称首次发现形状。参照固定为官方 `vendor/pi-mono` v1.2.0 / `06a466935536f8c9bcacb2d5efc0fc021be1bdff`；下文历史采集版本记录保留。
 
 在仓库根目录执行：
 
@@ -55,7 +55,7 @@ python3 scripts/export-corpus-materials.py --check
 node --test tests/corpus-materials.test.mjs tests/corpus.test.mjs
 ```
 
-本次上述检查实际通过：`CHECK: 5 sanitized excerpts, 25 messages; source shapes match`；Node 共 9 tests / 9 pass / 0 fail（新增素材 6 项＋既有加载 3 项）。这些结果仅验证素材，不是对偶矩阵或协议正确性结果。
+首次交付的素材检查实际通过：`CHECK: 5 sanitized excerpts, 25 messages; source shapes match`；当时Node为9/9（素材6项＋既有加载3项），这只证明素材。接入后的请求/回复及property结果由 `target/test-artifacts/` 本轮实际输出单独统计；`tests/discovered-corpora.test.mjs` 另外断言所有公开片段和assistant均进入构建器，不能以素材检查替代对偶。
 
 加载某份素材可直接使用 `readFileSync(file, "utf8").trimEnd().split("\n").map(line => JSON.parse(line).message)`；manifest 的 source.kind 区分两种包装。导出脚本只匹配上述场次及固定原 session，不遍历导出所有历史，未知结构/枚举立即停止；`--check` 不写任何文件，并逐份比较脱敏字节与源/产物 JSON 形状。无需安装依赖、启动服务或运行付费模型。
 

@@ -280,6 +280,6 @@ HTTP 状态 = `MockError.status`，body = `{"error":{"code":<code>,"message":<me
 
 锁定 `openai-responses-shared.ts:265–267` 请求回放直接 `JSON.parse(thinkingSignature)`；`:688–693` 回复最终签名始终 `JSON.stringify(reasoning item)`，thinking 取 `summary || content || accumulatedDelta`。回复编码域为缺省签名（生成 reasoning item）或 `type:"reasoning"` 的 item JSON；跨协议 `reasoning_content` 等 opaque 字符串**不在此域**，没有无损往返保证。`tests/canonical-ores.mjs:canonicalOresThinking` 明确拒绝非 reasoning JSON，不包装/替换语料，不把拒绝改成 pass。
 
-原 `reply-corpus-kahuwo-2` / `reply-corpus-claude2-2` 在 Responses 与 Azure 共四案为历史分母；当前 Responses9 + Azure9＝18 案仍保留真实 fail，分类为目标协议编码域不支持跨协议 opaque signature；不能据此归咎为可逆签名丢失，也不能据声明把矩阵自动变绿。候选方向为 encoder 确定性降级 + providerFill 声明剥离（涉及 `src/**`，需 owner 决策，本轮未做）。usage cache read/write 按 SH:560–575 的逆公式保留，不与签名支持域混淆。
+历史 `reply-corpus-kahuwo-2` / `reply-corpus-claude2-2` 的拒绝曾构成候选阶段的失败；现行已采用上文G09/G10的O18确定性text投影，不再把18案标作仍待裁定或仍全部失败。私有原语料不可用时，相关重放明确skip；公开合成和脱敏素材继续执行。usage cache read/write按逆公式独立保留，不与签名支持域混淆。
 
 `usage.cacheWrite1h` 无读取路径（SH:560–575），canonical 删除该拆分字段；Azure/Codex 共享此边界。 新增十协议缓存夹具全部保留源 input=11/output=5/read=13/write=17/1h=7，严格验证各协议声明的投影。

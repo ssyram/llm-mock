@@ -101,6 +101,7 @@ pub(crate) fn process(
     api: Api,
     key_id: String,
     req: UnifiedRequest,
+    session_signal: Option<String>,
     spec: Option<MountSpec>,
 ) -> Response {
     if spec.is_none() && key_id.is_empty() {
@@ -115,7 +116,7 @@ pub(crate) fn process(
     state.capture.record(api.name(), &key_id, &value);
     let input = serde_json::json!({
         "api": api.name(), "keyId": key_id, "model": req.model,
-        "sessionSignal": req.options.session_id, "request": value,
+        "sessionSignal": session_signal, "request": value,
     });
     match routing::entry(state, &key_id, &req, spec) {
         Ok(entry) => routing::execute(state, api, entry, input),

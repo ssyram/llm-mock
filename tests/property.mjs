@@ -5,17 +5,21 @@ import { createHash } from "node:crypto";
 import { freePort, startServer, deepDiff, repoRoot, serverBin } from "./harness.mjs";
 import { PROTOCOLS } from "./protocol-matrix.mjs";
 import { makeModel, streamOptions } from "./models-shared.mjs";
-import { loadCorpora, corpusContexts, syntheticContexts, replyCases } from "./corpus.mjs";
+import { loadAllCorpora, corpusContexts, syntheticContexts, replyCases } from "./corpus.mjs";
 import { additionalContexts, corpusReplies, additionalReplies } from "./extended-matrix-cases.mjs";
 import { w06RequestCases, w06ReplyCases } from "./w06-matrix-cases.mjs";
 import { w08RequestCases, w08ReplyCases } from "./w08-matrix-cases.mjs";
 import { rng, genContext, genReplyCase } from "./fuzz-message-generator.mjs";
-import { canonicalReply, compareReply } from "./canonical-reply.mjs";
 import { captureRequest, captureReply } from "./property-transport.mjs";
 import { decodedContext } from "./property-context.mjs";
-import { savePropertyReport } from "./property-report.mjs";
+import { savePropertyReport, propertySummary } from "./property-report.mjs";
 import { requestDomain } from "./property-request-domain.mjs";
 import { requestProjection } from "./property-request-projection.mjs";
+import { replyComposition, crossProjection } from "./property-composition.mjs";
+import { headerRejection } from "./request-header-rejection.mjs";
+import { emptyGoogleRejection } from "./request-body-rejection.mjs";
+import { STREAMERS } from "./matrix-lib.mjs";
+import { piAi } from "./pi-ai-imports.mjs";
 
 const roots = PROTOCOLS.filter((p) => ["completions", "responses", "anthropic", "google"].includes(p.alias));
 const wanted = process.argv.slice(2);
@@ -31,15 +35,12 @@ const environmentHashes = () => {
 		.filter((entry) => entry.isFile()).map((entry) => resolve(entry.parentPath, entry.name)).sort();
 	const docs = resolve(repoRoot, "docs/design/mock-llm-server");
 	const paths = [...sourceFiles(resolve(repoRoot, "src")), ...sourceFiles(resolve(referenceRoot, "packages/ai/src")),
-		...sourceFiles(resolve(docs, "api")), resolve(docs, "irreversibility-atlas.md"), serverBin];
+		...sourceFiles(resolve(docs, "api")), resolve(docs, "irreversibility-atlas.md"), resolve(docs, "property-tests.md"), serverBin];
 	return Object.fromEntries(paths.map((path) => [path, createHash("sha256").update(readFileSync(path)).digest("hex")]));
 };
 const state = { startedAt: new Date().toISOString(), inputHashes: inputHashes(), environmentHashes: environmentHashes(), status: "running", results: [], notes: [
-	"官方 submodule 参照源码只读；环境哈希枚举当前实际源码，不以旧 fork 的历史路径清单作为运行前提。原24条反例保存在 property-p1-counterexamples.json。",
-	"运行证据写入 target/test-artifacts；内容不相等、定义域拒绝和异常均保留为 finding，不计通过。",
-	"W-07 Bedrock/Mistral/Codex 专项不属本轮四根；冻结演进作为边界保留。输入域拒绝同样计入失败。",
-	"首轮未加 Rust 无标签块→TS 判别标签桥，结果已保留 property-first-run-results.json；该轮无效，不混入最终通过率。桥仅添加 type，不改 payload 值/身份。",
-	"P1 统一比较 Q_p(B(first)) 与 K_p(B(first))；rawIdempotent/rawDiffs 保留字面不动点反例。定义域拒绝仍为 finding，不计通过。P4 未改变。",
+	"官方 submodule 只读；逐次 canonical 合成定义见 docs/design/mock-llm-server/property-tests.md。",
+	"原始帧和非稳定投影差异完整保留；预期拒绝与前提不成立单列，不计matched。",
 ] };
 let server;
 const watchdog = setTimeout(() => {
@@ -69,6 +70,14 @@ async function check(property, api, name, target, run) {
 async function requestProperties(protocol, model, options, tc, port) {
 	const { api, canonical } = protocol;
 	const domain = requestDomain(api, model, options);
+	if (domain) {
+		const rejection = await headerRejection(server, STREAMERS[api], model, piAi.normalizeContext(tc), options, domain);
+		record("P1", api, tc.name, { ...rejection, phase: "request-boundary" });
+		for (const [property, target] of [["P3", undefined], ...roots.filter((p) => p.api !== api).map((p) => ["P4", p.api])]) {
+			record(property, api, tc.name, { target, outcome: "not-applicable", ok: true, diffs: [], reason: "source has no decoded value after asserted rejection" });
+		}
+		return;
+	}
 	let first;
 	let failure;
 	try { first = (await captureRequest(api, model, options, server, tc)).request; }
@@ -76,13 +85,6 @@ async function requestProperties(protocol, model, options, tc, port) {
 	const requireFirst = () => { if (failure) throw failure; };
 	await check("P1", api, tc.name, undefined, async (row) => {
 		row.phase = "first-decode";
-		if (domain) {
-			row.domain = domain;
-			row.phase = "domain-finding";
-			row.observedRejection = failure ? String(failure.message) : undefined;
-			row.domainMatched = Boolean(failure && failure.message.includes("ByteString"));
-			throw new Error(row.domainMatched ? `expected-rejection/domain finding: ${domain.reason}` : "request-domain prediction did not match observed rejection");
-		}
 		requireFirst();
 		row.phase = "second-decode";
 		const actual = (await captureRequest(api, model, options, server, decodedContext(first))).request;
@@ -105,12 +107,22 @@ async function requestProperties(protocol, model, options, tc, port) {
 			const targetModel = { ...makeModel(target.api, port), ...(tc.modelOverrides?.input ? { input: tc.modelOverrides.input } : {}) };
 			const targetOptions = { ...streamOptions(target.api), ...tc.options };
 			row.phase = "target-oracle";
-			row.expected = target.canonical(decodedContext(first), targetModel, targetOptions);
+			const context = decodedContext(first);
+			row.expected = target.canonical(context, targetModel, targetOptions);
+			const targetDomain = requestDomain(target.api, targetModel, targetOptions);
+			if (targetDomain) {
+				Object.assign(row, await headerRejection(server, STREAMERS[target.api], targetModel, piAi.normalizeContext(context), targetOptions, targetDomain));
+				return;
+			}
+			if (target.api === "google-generative-ai" && row.expected.context.messages.every((m) => m.role === "system")) {
+				Object.assign(row, await emptyGoogleRejection(server, STREAMERS[target.api], targetModel, piAi.normalizeContext(context), targetOptions));
+				return;
+			}
 			row.phase = "target-decode";
-			row.actual = (await captureRequest(target.api, targetModel, targetOptions, server, decodedContext(first))).request;
+			const actual = (await captureRequest(target.api, targetModel, targetOptions, server, context)).request;
 			row.phase = "target-second-decode";
-			row.repeated = (await captureRequest(target.api, targetModel, targetOptions, server, decodedContext(row.actual))).request;
-			row.diffs = [...diff(row.actual, row.expected, target.api).map((d) => `projection: ${d}`), ...diff(row.repeated, row.actual, target.api).map((d) => `stability: ${d}`)];
+			const repeated = (await captureRequest(target.api, targetModel, targetOptions, server, decodedContext(actual))).request;
+			Object.assign(row, crossProjection(first, actual, repeated, target.canonical, targetModel, targetOptions));
 		});
 	}
 }
@@ -118,22 +130,18 @@ async function requestProperties(protocol, model, options, tc, port) {
 async function replyProperty(api, model, options, tc) {
 	await check("P2", api, tc.name, undefined, async (row) => {
 		row.phase = "reply-oracle";
-		row.parserExpected = canonicalReply(api, tc.message, model);
-		row.phase = "first-encode-parse";
 		const started = Date.now();
 		const first = await captureReply(api, model, options, server, tc.message);
-		row.parsed = first.parsed;
-		row.expected = first.frames;
-		const parserDiffs = compareReply(first.parsed, row.parserExpected, deepDiff, started, Date.now());
+		const middle = Date.now();
 		row.phase = "second-encode";
-		row.actual = (await captureReply(api, model, options, server, first.parsed)).frames;
-		row.diffs = [...parserDiffs.map((d) => `parser: ${d}`), ...diff(row.actual, row.expected, api).map((d) => `frames: ${d}`)];
+		const second = await captureReply(api, model, options, server, first.parsed);
+		Object.assign(row, replyComposition(api, tc.message, first, second, model, [[started, middle], [middle, Date.now()]]));
 	});
 }
 
 savePropertyReport(state);
 try {
-	const corpora = loadCorpora();
+	const corpora = loadAllCorpora();
 	const port = await freePort();
 	server = await startServer(port);
 	for (const protocol of protocols) {
@@ -151,7 +159,7 @@ try {
 			...seeds.map((seed) => genReplyCase(rng(seed * 1000003 + roots.indexOf(protocol)), ident, seed))]) {
 			await replyProperty(api, model, streamOptions(api), tc);
 		}
-		console.log(`${api}: ${state.results.filter((r) => r.api === api && r.ok).length}/${state.results.filter((r) => r.api === api).length} passed`);
+		console.log(JSON.stringify({ api, ...propertySummary(state.results.filter((r) => r.api === api)) }));
 	}
 	state.status = "completed";
 } catch (error) {
@@ -168,5 +176,5 @@ try {
 	savePropertyReport(state);
 }
 const failures = state.results.filter((r) => !r.ok).length;
-console.log(`${state.results.length - failures} pass / ${failures} findings; ${state.status}`);
-if (failures) process.exitCode = 1;
+console.log(`${state.summary.matched} matched / ${state.summary.expectedRejections} expected rejections / ${state.summary.notApplicable} not applicable / ${failures} failures; ${state.status}`);
+if (failures || state.status !== "completed" || state.changedInputs.length || state.changedEnvironment.length) process.exitCode ||= 1;

@@ -23,7 +23,9 @@ export function canonicalCodex(context, model, options) {
 
 export function canonicalVertex(context, model, options) {
 	// family-variants §3a calls convertTools(..., false, strict): full JSON schema.
-	return retag(canonicalGai(context, model, options), "google-vertex");
+	const out = retag(canonicalGai(context, model, options), "google-vertex");
+	out.model = model.id.split("/").at(-1).split(":")[0];
+	return out;
 }
 
 function retag(out, api, provider) {

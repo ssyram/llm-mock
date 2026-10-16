@@ -95,7 +95,9 @@ pub async fn route(
         decode_headers.insert(auth, axum::http::HeaderValue::from_static(value));
     }
     match api.decode(&path, &body, &decode_headers) {
-        Ok(req) => crate::server::process(&state, api, api.key(&headers), req, spec),
+        Ok((req, signal)) => {
+            crate::server::process(&state, api, api.key(&headers), req, signal, spec)
+        }
         Err(error) => http_error(api, 400, "invalid_request", &error),
     }
 }

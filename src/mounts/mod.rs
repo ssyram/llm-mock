@@ -14,6 +14,8 @@ pub mod transport;
 #[cfg(test)]
 mod admin_tests;
 #[cfg(test)]
+mod protocol_tests;
+#[cfg(test)]
 mod routing_tests;
 #[cfg(test)]
 mod tests;

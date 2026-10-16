@@ -6,6 +6,7 @@ import { fillBedrock } from "./canonical-bedrock-reply.mjs";
 import { fillMistral, fillPiMessages } from "./canonical-reply-additional.mjs";
 import { finalizeUsage } from "./canonical-reply-usage.mjs";
 import { projectEncodeThinking } from "./canonical-encode-thinking.mjs";
+import { expectsGeneratedToolId } from "./generated-tool-id.mjs";
 
 export function canonicalReply(api, source, model) {
 	const out = structuredClone(source);
@@ -36,7 +37,7 @@ export function compareReply(actual, expected, deepDiff, started, ended) {
 	for (let index = 0; index < expected.content.length; index++) {
 		const block = expected.content[index];
 		if (block.type !== "toolCall") continue;
-		if (!block.id.startsWith("@pi-generated:")) {
+		if (!expectsGeneratedToolId(block)) {
 			ids.add(block.id);
 			continue;
 		}

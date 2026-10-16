@@ -34,7 +34,7 @@ Vertex ADC 的 project 优先 option → GOOGLE_CLOUD_PROJECT → GCLOUD_PROJECT
 
 | unified 字段 | convert 处理 + file:line | wire 字段 | decode 重建 | 终态 |
 |---|---|---|---|---|
-| system.content/sections | S:213–228 用 TX:15–39：首条 content 后接非 null sections，以双换行连接；后续 section 用精确 `Updated system prompt section "name":\n\nvalue` / `Removed system prompt section "name".`；sanitizeSurrogates | Azure：model.reasoning=true 且 supportsDeveloperRole!==false 时 input.role=developer，否则 system；Codex：首条不进 input，顶层 instructions=初始文本或 `You are a helpful assistant.`（C:543–558）；后续兼容更新仍进 input | Azure OD:28–34；Codex 根 decode 后仅填首条空 System 或前插（src/api/openai_codex_responses/decode.rs:18–54） | D；Codex instructions 不经 S 的 surrogate 清洗（C:552–558）。后续 system 在 input 首位且非空时，mock 不再插 instructions，属于实现缺口 |
+| system.content/sections | S:213–228 用 TX:15–39：首条 content 后接非 null sections，以双换行连接；后续 section 用精确 `Updated system prompt section "name":\n\nvalue` / `Removed system prompt section "name".`；sanitizeSurrogates | Azure：model.reasoning=true 且 supportsDeveloperRole!==false 时 input.role=developer，否则 system；Codex：首条不进 input，顶层 instructions=初始文本或 `You are a helpful assistant.`（C:543–558）；后续兼容更新仍进 input | Azure OD:28–34；Codex填首条空System；已有非空System时前插instructions并把全局tools移到初始System，保留原System更新 | D；Codex instructions 不经 S 的 surrogate 清洗（C:552–558）。后续system不会覆盖顶层instructions；两者及工具归属有直接decoder回归 |
 | user 字符串/text/image；textSignature | S:229–254：文本清洗，字符串变一 input_text，图片 data URI + detail:auto，空数组整条跳过 | input role=user、input_text/input_image | OD:165–175：parts 还原块数组；不恢复原字符串形态；图片 split data URI | D（字符串→块数组、清洗）；视觉图片 data/mime E；textSignature L |
 | assistant.text / textSignature | S:269–289：签名可为 `{v:1,id,phase?}`（仅 commentary/final_answer）或 legacy 原串 ID；缺失用 msg_pi_{msgIndex}，后续块加 _{textBlockIndex}；ID >64 UTF-16 code units 改 msg_{shortHash(id)}；清洗文本 | 每块一个 completed message / output_text；id/phase | OD:47–54：每 item 一 text，签名封装 v1；连续 assistant items 汇成一消息（OD:118–138） | D：签名封装/合并边界/清洗；文本在清洗不改变时 E |
 | assistant.thinking / thinkingSignature / redacted | S:263–268 仅 thinkingSignature truthy 时 JSON.parse 并直接当 item；**无 catch** | signature JSON 本身，非独立 thinking 文本 | OD:56–64：summary 以双换行连接，非空优先，否则 content；签名为原 item JSON 重序列化；redacted=None | D：文本由签名重建，不保证原 thinking；无签名 thinking L；redacted L。非法 JSON 客户端 convert 拒绝，不是 transport 阻断 |
@@ -124,7 +124,9 @@ canonical 是字段投影后的等价类，**不是恢复丢失信息**。以下
 
 Responses/Codex/Mistral 的 Unicode session 在锁定客户端构造 HTTP Headers 时因 ByteString 约束拒绝，服务器未收到请求。矩阵须实际断言明确拒绝原因、fetch 调用数为0且无 capture，再单列为 expected-rejection；不得混入成功对偶数，意外成功、不同错误或产生网络调用都计失败。Unicode JSON 正文不受这一请求头限制。
 
-| 规则 | 精确规则与源码 | 对账与裁决 |
+以下对账表是旧冻结轮的历史记录，不是当前未修清单；现行行为以本页字段合同、上述修复说明和当前直接测试为准。旧报告中已修事项不再作为当前FAIL。
+
+| 规则 | 精确规则与源码 | 历史对账与裁决 |
 |---|---|---|
 | Q 系统/工具重放 | TR:58–120；TX:6–39；默认折叠，支持mid-convo时保留后续更新；tools remove/re-add按名覆盖 | tests/canonical-family-variants.mjs:38–39 恒false，仅默认compat适用；不是全compat canonical |
 | Q 全消息预处理 | T:12–57 图片占位；T:95–145跨模型；T:167–232删error/aborted、补No result provided、延后system | tests/canonical-ores.mjs:43 / canonical-gai.mjs:27复用T，基础行为一致，但ID回调简化，不能覆盖真实provider条件 |

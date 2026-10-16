@@ -15,9 +15,9 @@ D3 mount semantics: a name binds directly to a shell script. Main listener URLs 
 
 ## Routes and protocol selection
 
-After removing `/{name}`, `/v1/chat/completions` and `/chat/completions` use OpenAI completions; `/(v1/)responses` uses Responses; `/v1/messages` uses Anthropic; `/messages` uses pi-messages; `/v1beta/...` uses Google; `/openai/v1/responses` uses Azure; `/codex/responses` and `/backend-api/codex/responses` use Codex. Vertex uses `/v1[beta]/.../publishers/google/models/...`. Query strings are retained. Missing mounts and unsupported protocol paths return 404, without consulting legacy registry entries. Dedicated ports use the same protocol paths without a name prefix and expose no admin API.
+After removing `/{name}`, `/v1/chat/completions` and `/chat/completions` use OpenAI completions; `/(v1/)responses` uses Responses; `/v1/messages` uses Anthropic; `/messages` uses pi-messages; `/v1beta/...` uses Google; `/openai/v1/responses` uses Azure; `/codex/responses` and `/backend-api/codex/responses` use Codex. Vertex uses `/v1[beta]/.../publishers/{publisher}/models/...`; publisher is not restricted to Google. Query strings are retained. Missing mounts and unsupported protocol paths return 404, without consulting legacy registry entries. Dedicated ports use the same protocol paths without a name prefix and expose no admin API.
 
-Completions-path-only ambiguity policy (approved): optional `prefer` is `openai-completions` or `mistral-conversations`, and overrides heuristics. Optional `protocols` is an allowed API list; a single allowed member of those two pins completions selection. If both/neither are specified, `prompt_mode`, `x-affinity`, or a `thinking` message content block selects Mistral; otherwise OpenAI. No model-name sniffing and no global body sniffing. On Responses-family generic paths, an `api-key` header selects Azure. Bedrock HTTP binary transport remains out of scope.
+Completions-path-only ambiguity policy (approved): optional `prefer` is `openai-completions` or `mistral-conversations`, and overrides heuristics. Optional `protocols` is an allowed API list; a single allowed member of those two pins completions selection. If both/neither are specified, `prompt_mode`, `x-affinity`, or a `thinking` message content block selects Mistral; otherwise OpenAI. No model-name sniffing and no global body sniffing. On Responses-family generic paths, an `api-key` header selects Azure. Bedrock uses its separate legacy root `/model/{id}/converse-stream` binary transport, outside this generic mount API list.
 
 Supported protocol identifiers: `openai-completions`, `openai-responses`, `anthropic-messages`, `google-generative-ai`, `google-vertex`, `mistral-conversations`, `azure-openai-responses`, `openai-codex-responses`, `pi-messages`. Nonempty `protocols` also restricts enabled APIs; `prefer` must be included when a restriction is supplied.
 
@@ -35,7 +35,7 @@ mock-llm-server remove scenario
 
 CLI subcommands contact a running local instance, never start one. `--server-url` defaults to `http://127.0.0.1:18000`, supports HTTP host:port (also bare host:port), and belongs after the subcommand. CLI prints admin JSON; non-2xx responses exit nonzero. Scripts/admin are trusted local code, not an authenticated remote service.
 
-## Verification record — actual execution (2000-01-01 UTC)
+## Historical verification record — not the current test count (2000-01-01 UTC)
 
 ### Checks
 
@@ -101,7 +101,7 @@ The pinned CLI invocation used `add <same registered command> --name pinned --pr
 
 ## Residual risks and acceptance handoff
 
-- Bedrock binary HTTP transport is intentionally not wired; its codec tests remain green. No full TypeScript/SDK duality rerun was performed for this routing-only change.
+- The historical routing-only run below did not include Bedrock. Current Bedrock binary root transport is wired; it is not part of generic mounts. Current automated runs are separate from this historical record.
 - Marker-free OpenAI/Mistral shared-path requests are inherently ambiguous: default OpenAI, explicit mount preference recommended.
 - Persistence stores commands/protocol choices, not fixed ports. File contents are synced before atomic rename; directory metadata is not fsynced, and concurrent instances must not share the same mounts file.
 - Deletion prevents new selection and releases the listener; an already-selected/in-flight script may finish. No script timeout/sandbox was added; commands remain trusted local shell code using the existing executor.

@@ -3,7 +3,7 @@ import { writeFileSync } from "node:fs";
 import { artifactPath } from "./test-artifacts.mjs";
 import { matrixSummaryText } from "./matrix-summary.mjs";
 import { startServer, freePort } from "./harness.mjs";
-import { loadCorpora, corpusContexts, syntheticContexts, replyCases } from "./corpus.mjs";
+import { loadAllCorpora, corpusContexts, syntheticContexts, replyCases } from "./corpus.mjs";
 import { additionalContexts, corpusReplies, additionalReplies } from "./extended-matrix-cases.mjs";
 import { makeModel } from "./models-shared.mjs";
 import { PROTOCOLS } from "./protocol-matrix.mjs";
@@ -17,7 +17,7 @@ const protocols = wanted.length ? wanted.map((name) => {
 	if (!protocol) throw new Error(`unknown protocol: ${name}`);
 	return protocol;
 }) : PROTOCOLS;
-const corpora = loadCorpora();
+const corpora = loadAllCorpora();
 const results = [];
 const startedAt = new Date().toISOString();
 const resultPath = artifactPath("matrix-ten-results.json");

@@ -2,6 +2,7 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { loadDiscoveredCorpora } from "./discovered-corpora.mjs";
 
 const testsDir = fileURLToPath(new URL(".", import.meta.url));
 
@@ -50,6 +51,10 @@ export function loadCorpora(root = join(testsDir, "..")) {
 	});
 	console.log(`Corpus sessions: ${corpora.length} loaded / ${skipped} skipped`);
 	return corpora;
+}
+
+export function loadAllCorpora() {
+	return [...loadCorpora(), ...loadDiscoveredCorpora()];
 }
 
 // Clone helper so case builders can mutate freely.
@@ -101,6 +106,9 @@ export function corpusContexts(corpora) {
 		["b4-glm53-mixed", "corpus-b4-glm53-mixed"],
 	]) {
 		if (byName[name]) cases.push({ name: caseName, messages: c(byName[name]) });
+	}
+	for (const { name, messages, provenance } of corpora.filter((corpus) => corpus.name.startsWith("discovery-"))) {
+		cases.push({ name: `corpus-${name}-fragment`, messages: c(messages), provenance });
 	}
 	return cases;
 }

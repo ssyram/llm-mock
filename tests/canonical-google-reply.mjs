@@ -1,5 +1,7 @@
+import { markGeneratedToolId } from "./generated-tool-id.mjs";
+
 export function requiresGoogleToolId(model) {
-	return /^(claude-|gpt-oss-)/.test(model.id) || Number(/gemini-(\d+)/.exec(model.id)?.[1]) >= 3;
+	return /^(claude-|gpt-oss-)/.test(model.id) || Number(/^gemini(?:-live)?-(\d+)/i.exec(model.id)?.[1]) >= 3;
 }
 
 const ERRORS = new Set(["BLOCKLIST", "PROHIBITED_CONTENT", "SPII", "SAFETY", "IMAGE_SAFETY", "IMAGE_PROHIBITED_CONTENT", "IMAGE_RECITATION", "IMAGE_OTHER", "RECITATION", "FINISH_REASON_UNSPECIFIED", "OTHER", "LANGUAGE", "MALFORMED_FUNCTION_CALL", "UNEXPECTED_TOOL_CALL", "TOO_MANY_TOOL_CALLS", "NO_IMAGE"]);
@@ -20,8 +22,8 @@ export function fillGoogle(out, model, source = out) {
 		delete block.redacted;
 		delete block.namespace;
 		if (block.type === "toolCall") {
-			if (!requiresGoogleToolId({ id: source.model }) || !block.id || ids.has(block.id)) block.id = `@pi-generated:${++counter}`;
-			ids.add(block.id);
+			if (!requiresGoogleToolId({ id: source.model }) || !block.id || ids.has(block.id)) markGeneratedToolId(block, ++counter);
+			else ids.add(block.id);
 			if (!block.thoughtSignature) delete block.thoughtSignature;
 			block.arguments ??= {};
 		} else {
