@@ -8,13 +8,13 @@
 
 ## 为什么可靠可信
 
-- **稳定**：锁定参照 pi-ai 版本，每个字段级转换都有冻结规格（`docs/design/mock-llm-server/` 图谱＋十协议规格），升级 = 锁新版重跑矩阵，差异机械可判。
-- **实证**：历史私有语料对偶矩阵 824 绿＋ fuzz 16000 零 crash ＋ 双 harness（pi/OpenCode）真会话验证。真实语料不随仓库发布；公开运行明确跳过缺失语料，仍执行合成用例。
-- **诚实**：不掩饰损失——不可逆字段逐条声明（如 timestamp 不上线、跨协议签名丢弃），测试从不注水。
+- **锁定参照**：固定官方 pi-ai 和逐协议合同（`docs/design/mock-llm-server/`）；升级须重跑矩阵，按新版源码解决差异。
+- **可重试实证**：`cargo test` 统一运行 Rust 及依赖具备的对偶、fuzz、流、工具轨迹和真实 Pi/OpenCode harness 检查。结果只属于记录的版本和用例，不证明任意输入。私有捕获不随仓库发布，缺失会话明确跳过。
+- **明确损失**：逐条声明不可逆字段与确定投影。多数厂商历史消息不带时间戳，pi-messages 保留；预期拒绝、缺环境跳过和真实失败分别报告。
 
 ## 核心 idea
 
-pi-ai 在客户端方向维护「统一 Message ⇄ 各厂商 wire」的全部脏活；本仓库实现它的**对偶端**，正确性由对偶测试背书：`decode(convert(C)) ≡ canonical(C)`、`parse(encode(A)) ≡ providerFill(A)`（oracle = 锁定版本 pi-ai 适配器）。
+pi-ai 在客户端方向维护「统一 Message ⇄ 各厂商 wire」的全部脏活；本仓库实现它的**对偶端**，在声明输入域中对照固定参照测试：`decode(convert(C)) ≡ canonical(C)`、`parse(encode(A)) ≡ providerFill(A)`（oracle = 锁定版本 pi-ai 适配器）。
 
 > 🚀 **新手从这里开始**：[hands-on-tutorial.md](docs/design/mock-llm-server/hands-on-tutorial.md) —— 从零到多轮/工具/错误路径的全流程实测教程（每步真实命令＋输出，经新用户盲测校验）。
 
@@ -121,6 +121,7 @@ cargo test
 - Python、zstd 及客户端有各自的依赖要求，不作为无依赖核心单测的隐含前提。缺 Python、Node（最低 23）、pi-ai 源码或依赖、Pi、OpenCode 时，对受影响的测试组明确输出 `WARNING: SKIP ... NOT VERIFIED`；缺 zstd CLI／Node 原生 zstd API 时跳过依赖 Codex 压缩的组。无关测试继续运行；已安装工具损坏、参照版本不符／被修改及断言失败均使 `cargo test` 失败。跳过不等于证明对偶，正式开发仍须取得约定的协议对偶证据。
 - 官方参照是 `vendor/pi-mono` Git submodule：[earendil-works/pi](https://github.com/earendil-works/pi)，**v1.2.0**，固定 commit **`06a466935536f8c9bcacb2d5efc0fc021be1bdff`**。pi-messages 属于同一源码树。Git gitlink 锁源码，submodule 内的 `package-lock.json` 锁 npm 依赖；升级后须重跑矩阵。旧 fork commit `371cc25` 的历史报告不证明此官方版本已通过。
 - 日志和新生成证据统一写入 `target/test-artifacts/`（可用 `MOCK_TEST_ARTIFACTS` 指定），不覆盖历史报告。独立 Node 命令可用 `MOCK_SERVER_BIN` 选择服务端；Cargo 自动传入本轮构建的可执行文件，兼容自定义 target 目录。缺私有语料时明确跳过对应会话，仍运行合成用例。
+- 十个 typed provider 契约生成 canonical 期待，各自的 options 声明包含可执行的精确变换。独立字段扰动、流分片／取消、小域工具轨迹及定向故障实验随依赖组自动运行；参照准备了 TypeScript 编译器时自动检查类型，缺失则明确 NOT VERIFIED，见[实验合同与边界](docs/design/mock-llm-server/duality-experiments.md)。
 - `tests/fixtures/corpus-discovery/` 的公开脱敏片段携带来源进入双方向矩阵和property，不伪造完整会话。Property逐次对照独立canonical；原始帧／投影变化仍记录为观察，不假定有损转换天然不动，见[性质合同](docs/design/mock-llm-server/property-tests.md)。
 - 矩阵分别统计成功 `matched`、严格断言的 `expected rejections` 和失败；预期拒绝不计为成功对偶。Codex `instructions` 的孤立 surrogate 在服务端按 canonical 删除，净化为空时用默认系统提示；合法 emoji、U+FFFD、字面 `\\ud800` 和其他 JSON 字段不受此净化影响，详见 `api/family-variants.md`。
 - 语料捕获插件 `extensions/llm-corpus-capture.ts`：挂到真实会话即存统一 Message 语料（采语料才需要真模型凭据；mock 本身永远不需要）

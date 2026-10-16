@@ -13,6 +13,7 @@
 - canonical/providerFill 逐协议声明于 `api/`，明确有损、默认值、客户端注入与拒绝边界，不把 wire 有字段而实现漏读叫信息论丢失。
 - Rust 单测证明本地断言；真实锁定客户端与 Rust HTTP 的对偶证明对应样本，不互相替代。性质合成规则见 [property-tests.md](property-tests.md)；不由单轮等价推出帧或重复投影天然不动。
 - 明确的客户端前置拒绝要实际验证原因、无请求/无capture，单列 expected-rejection，不算成功对偶；缺测试环境才 skip，内容错误不得 skip。
+- 可执行定义统一入口为 `tests/contracts/` 的十个 typed provider 实例；各自声明的精确 options 操作参与实际 canonical 生成，不从 fixture 暗补默认值。独立字段扰动、流分片/中断及小域工具轨迹见 [duality-experiments.md](duality-experiments.md)，不以定义与实现自洽代替外部观测。
 
 ## 请求与回复流程
 

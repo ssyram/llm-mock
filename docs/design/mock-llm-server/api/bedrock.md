@@ -114,6 +114,8 @@ encoder 固定事件序列为 `messageStart` → 每块的 start（仅工具）/
 
 **与既有文档/tests 的显式裁决（源码胜出，不改 oracle 来掩盖差异）。**
 
+下表保留冻结时的差异及裁决，不把当时的 oracle 缺口一概视作当前状态。现行可执行入口为 `tests/contracts/bedrock.ts`；预算规则按上述 Q-maxTokens / Simple 实施，并由真实 SDK 的缺省/0/1/15/16/17、非 Claude 与 name-only Claude profile 探针验证，见 [增强实验](../duality-experiments.md)。其余历史项是否已修以当前实现与对应运行证据为准，不由此备注追加未运行的覆盖结论。
+
 | 旧结论或 oracle | 核对结果与裁决 |
 |---|---|
 | 旧合并页将 additionalModelRequestFields 描述为整体 JSON 保留（旧版bedrock-mistral.md（现已退役）） | 冻结时旧文错误、mock仅取thinking。W-07经批准改为完整非空对象JSON envelope（`src/api/bedrock_converse_stream/decode.rs:39–42`；`api/bedrock-converse-stream.ts:1279–1332`）；这是已实施的定义演进，不是回写历史验证。 |

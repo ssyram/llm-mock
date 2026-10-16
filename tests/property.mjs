@@ -28,8 +28,10 @@ const protocols = wanted.length ? wanted.map((name) => {
 	if (!root) throw new Error(`not a family root: ${name}`);
 	return root;
 }) : roots;
-const inputHashes = () => Object.fromEntries(readdirSync(new URL("./", import.meta.url)).filter((name) => name.endsWith(".mjs")).map((name) =>
-	[name, createHash("sha256").update(readFileSync(new URL(name, import.meta.url))).digest("hex")]));
+const inputHashes = () => Object.fromEntries(readdirSync(new URL("./", import.meta.url), { recursive: true, withFileTypes: true })
+	.filter((entry) => entry.isFile() && /\.(mjs|ts)$/.test(entry.name) && !entry.parentPath.includes("/node_modules/"))
+	.map((entry) => resolve(entry.parentPath, entry.name)).sort().map((path) =>
+		[path, createHash("sha256").update(readFileSync(path)).digest("hex")]));
 const environmentHashes = () => {
 	const sourceFiles = (dir) => readdirSync(dir, { recursive: true, withFileTypes: true })
 		.filter((entry) => entry.isFile()).map((entry) => resolve(entry.parentPath, entry.name)).sort();

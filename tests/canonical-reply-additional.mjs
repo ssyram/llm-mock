@@ -34,7 +34,9 @@ export function fillMistral(out) {
 	if (out.stopReason === "error") out.errorMessage = raw === "error" ? "Provider stopped with: error (server error)" : `Provider stopped with: ${raw}`;
 }
 
-export function fillPiMessages(out) {
+export function fillPiMessages(out, _model, source = out) {
+	if (["pending", "deferred"].includes(out.stopReason)) throw new Error(`pi-messages encoder rejects ${out.stopReason}`);
+	if (source.providerThinkingLevel !== undefined) out.providerThinkingLevel = source.providerThinkingLevel;
 	for (const field of ["responseModel", "thinkingLevel", "rawStopReason", "endTurn", "durationMs"]) delete out[field];
 	if (!["error", "aborted"].includes(out.stopReason)) delete out.errorMessage;
 }

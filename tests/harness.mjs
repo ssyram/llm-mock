@@ -22,7 +22,7 @@ export function freePort() {
 	});
 }
 
-export async function startServer(port, env = {}) {
+export async function startServer(port, env = {}, replySource) {
 	const dir = mkdtempSync(join(tmpdir(), "duality-"));
 	const replyPath = join(dir, "reply.json");
 	writeFileSync(replyPath, JSON.stringify(minimalReply));
@@ -30,7 +30,7 @@ export async function startServer(port, env = {}) {
 	writeFileSync(
 		registryPath,
 		JSON.stringify({
-			entries: ["duality", streamOptions("openai-codex-responses").apiKey].map((keyId) => ({ keyId, matcher: { type: "any" }, reply: { type: "file", path: replyPath } })), 
+			entries: ["duality", streamOptions("openai-codex-responses").apiKey].map((keyId) => ({ keyId, matcher: { type: "any" }, reply: replySource ?? { type: "file", path: replyPath } })),
 		}),
 	);
 	const mountsPath = join(dir, "mounts.json");

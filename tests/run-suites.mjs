@@ -1,4 +1,4 @@
-import { readdirSync, openSync, closeSync } from "node:fs";
+import { readdirSync, openSync, closeSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import * as zlib from "node:zlib";
@@ -59,6 +59,9 @@ try {
 	reference = { invalid: error.message };
 	console.error(`FAIL pi-ai-reference: ${error.message}`);
 }
+const compiler = resolve(repoRoot, "vendor/pi-mono/node_modules/typescript/bin/tsc");
+if (existsSync(compiler)) run("contract-types", [compiler, "--project", "tests/contracts/tsconfig.json"]);
+else skip("contract-types", "TypeScript compiler is not prepared; run sh tests/setup.sh");
 const zstd = probe("zstd");
 if (!zstd.invalid && (typeof zlib.zstdCompressSync !== "function" || typeof zlib.zstdDecompressSync !== "function")) zstd.missing = "requires Node native zstd APIs (use Node 24 LTS)";
 const tests = readdirSync(resolve(repoRoot, "tests")).filter((name) => name.endsWith(".test.mjs")).sort();

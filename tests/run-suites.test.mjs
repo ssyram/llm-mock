@@ -25,15 +25,15 @@ test("missing optional tools skip only dependent groups; independent tests still
 	const result = run();
 	assert.equal(result.status, 0, result.stderr);
 	assert.match(result.stdout, /PASS node-tests-node/);
-	for (const name of ["duality", "transport", "fuzz", "property", "pi-harness", "opencode-harness"]) assert.match(result.stdout, new RegExp(`WARNING: SKIP ${name}:.*NOT VERIFIED`));
-	assert.match(result.stdout, /1 passed \/ 0 failed \/ 6 skipped/);
+	for (const name of ["contract-types", "duality", "transport", "fuzz", "property", "pi-harness", "opencode-harness"]) assert.match(result.stdout, new RegExp(`WARNING: SKIP ${name}:.*NOT VERIFIED`));
+	assert.match(result.stdout, /1 passed \/ 0 failed \/ 7 skipped/);
 });
 
 test("assertion failure is propagated even when all external suites are skipped", (t) => {
 	const result = fixture(t, true).run();
 	assert.equal(result.status, 1);
 	assert.match(result.stderr, /FAIL node-tests-node/);
-	assert.match(result.stdout, /0 passed \/ 1 failed \/ 6 skipped/);
+	assert.match(result.stdout, /0 passed \/ 1 failed \/ 7 skipped/);
 });
 
 test("installed but broken harness is failed, not skipped", (t) => {

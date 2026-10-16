@@ -1,31 +1,8 @@
-import { fillCompletions } from "./canonical-occ-reply.mjs";
-import { fillResponses } from "./canonical-responses-reply.mjs";
-import { fillAnthropic } from "./canonical-anthropic-reply.mjs";
-import { fillGoogle } from "./canonical-google-reply.mjs";
-import { fillBedrock } from "./canonical-bedrock-reply.mjs";
-import { fillMistral, fillPiMessages } from "./canonical-reply-additional.mjs";
-import { finalizeUsage } from "./canonical-reply-usage.mjs";
-import { projectEncodeThinking } from "./canonical-encode-thinking.mjs";
+import { providerContract } from "./provider-contracts.mjs";
 import { expectsGeneratedToolId } from "./generated-tool-id.mjs";
 
 export function canonicalReply(api, source, model) {
-	const out = structuredClone(source);
-	out.content = projectEncodeThinking(api, out.content);
-	Object.assign(out, { role: "assistant", api: model.api, provider: model.provider, model: model.id });
-	for (const key of ["timestamp", "durationMs", "thinkingLevel", "providerThinkingLevel", "diagnostics", "deferred"]) delete out[key];
-	if (api === "openai-completions") fillCompletions(out, undefined, model);
-	else if (api.endsWith("responses")) fillResponses(out);
-	else if (api === "anthropic-messages") fillAnthropic(out, model, source);
-	else if (["google-generative-ai", "google-vertex"].includes(api)) fillGoogle(out, model, source);
-	else if (api === "bedrock-converse-stream") fillBedrock(out);
-	else if (api === "mistral-conversations") fillMistral(out);
-	else if (api === "pi-messages") {
-		if (["pending", "deferred"].includes(out.stopReason)) throw new Error(`pi-messages encoder rejects ${out.stopReason}`);
-		if (source.providerThinkingLevel !== undefined) out.providerThinkingLevel = source.providerThinkingLevel;
-		fillPiMessages(out);
-	}
-	finalizeUsage(out, model, api);
-	return out;
+	return providerContract(api).reply(source, model);
 }
 
 export function compareReply(actual, expected, deepDiff, started, ended) {

@@ -11,6 +11,13 @@ const fixture = (t, files) => {
 	for (const [name, source] of Object.entries(files)) writeFileSync(join(dir, name), source);
 	return dir;
 };
+test("declared requirements and TS dependency edges are discovered without executing modules", (t) => {
+	const dir = fixture(t, { "a.mjs": 'import "./b.ts";', "b.ts": 'export const TEST_DEPENDENCIES = ["zstd"];' });
+	assert.deepEqual([...testRequirements(join(dir, "a.mjs"))], ["zstd"]);
+	writeFileSync(join(dir, "b.ts"), 'export const TEST_DEPENDENCIES = ["unknown"];');
+	assert.throws(() => testRequirements(join(dir, "a.mjs")), /unsupported test dependency/);
+});
+
 test("Node-only tests have no pi-ai requirement", (t) => {
 	const dir = fixture(t, { "a.mjs": 'import { value } from "./b.mjs";', "b.mjs": "export const value = 1;" });
 	assert.deepEqual([...testRequirements(join(dir, "a.mjs"))], []);
