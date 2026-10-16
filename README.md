@@ -105,8 +105,21 @@ A script is any executable (node/python/shell…) invoked as a **fresh process p
 
 ## Testing & corpus
 
-- `cargo test`: per-protocol unit tests
-- `tests/`: the duality harness — synthetic cases plus optional private corpus, all protocols × both directions, deep-compared (plus fuzz and property suites). `node tests/duality.mjs` reports missing private sessions as explicit skips; `node tests/fuzz.mjs` uses synthetic data only. Node ≥23 and the locked sibling `../pi-mono/packages/ai` checkout with its dependencies are required by `tests/pi-ai-imports.mjs`.
+`cargo build` and normal server use do not require Node, pi-ai, Pi, or OpenCode. For development, use **Node 24 LTS** (`.nvmrc`) and clone recursively:
+
+```sh
+git clone --recursive https://github.com/ssyram/llm-mock.git
+cd llm-mock
+# Existing clone: git submodule update --init --recursive
+sh tests/setup.sh  # optional: install the reference's locked npm dependencies
+cargo test
+```
+
+- `cargo test` always runs the Python-independent Rust core tests. Its optional-suite entry probes and runs the Python script-routing group independently, then probes Node and runs Node tests, duality, transport, the full 800-seed fuzz suite, property tests, and the documented Pi/OpenCode CLI round-trips whenever each group's prerequisites are available. Select a group with `cargo test --test optional_suites -- python` or `cargo test --test optional_suites -- node`. No test command installs dependencies or downloads the submodule.
+- Python, zstd, and client tools retain their own dependency requirements; they are not implicit prerequisites for the core unit suite. Missing Python, Node (minimum 23), pi-ai reference/dependencies, Pi, or OpenCode produces explicit per-group `WARNING: SKIP ... NOT VERIFIED` messages. Missing zstd CLI/native Node APIs skips groups that require Codex compression. Independent groups still run; installed-but-broken tools, a mismatched/modified reference, and test failures make `cargo test` fail. A skip is never proof of equivalence; development must establish the declared protocol duality before claiming correctness.
+- The official reference is the `vendor/pi-mono` Git submodule: [earendil-works/pi](https://github.com/earendil-works/pi), **v1.2.0**, commit **`06a466935536f8c9bcacb2d5efc0fc021be1bdff`**. pi-messages is part of that same source tree. The gitlink pins the source; the submodule's `package-lock.json` pins npm dependencies. Upgrades require rerunning the matrix; old reports against fork commit `371cc25` do not establish results for this official pin.
+- Logs and generated evidence go to `target/test-artifacts/` (override with `MOCK_TEST_ARTIFACTS`), never over historical reports. `MOCK_SERVER_BIN` selects the server executable for standalone Node commands; Cargo supplies its freshly built binary automatically, including custom target directories. Missing private corpus sessions are explicitly skipped; synthetic cases still run.
+- Matrix output separates successful `matched` cases, strictly asserted `expected rejections`, and failures; an expected rejection is not a successful duality comparison. Codex `instructions` drops unpaired surrogates at the server boundary, using the canonical default prompt if cleaning empties it; valid emoji, U+FFFD, literal `\\ud800`, and other JSON fields are unaffected. See `api/family-variants.md`.
 - Corpus capture plugin `extensions/llm-corpus-capture.ts`: mount into a real session to capture unified-Message corpus (only corpus collection needs real model credentials; the mock itself never does)
 
 ## Layout
@@ -115,4 +128,4 @@ A script is any executable (node/python/shell…) invoked as a **fresh process p
 
 ## Notes
 
-Corpus/capture directories (`.pi/mock-corpus`, `.tmp-*`, `captures`) and private generated evidence are excluded by `.gitignore`; never force-add them. Published historical reports use anonymized paths, identifiers and synthetic content where needed; see [release sanitization audit](docs/design/mock-llm-server/release-sanitize.md). Locked reference: local pi-mono `packages/ai` @1.2.0; upgrades require rerunning the full duality matrix.
+Corpus/capture directories (`.pi/mock-corpus`, `.tmp-*`, `captures`) and private generated evidence are excluded by `.gitignore`; never force-add them. Published historical reports use anonymized paths, identifiers and synthetic content where needed; see [release sanitization audit](docs/design/mock-llm-server/release-sanitize.md). Locked reference: official pi-ai v1.2.0 in `vendor/pi-mono`; upgrades require rerunning the full duality matrix.

@@ -19,7 +19,4 @@ mod routing_tests;
 mod tests;
 
 #[cfg(test)]
-mod script_fixture;
-
-#[cfg(test)]
 mod request_fixture;

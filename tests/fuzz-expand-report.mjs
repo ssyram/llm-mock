@@ -1,7 +1,8 @@
 import { writeFileSync } from "node:fs";
-export const reportPath = new URL("../docs/design/mock-llm-server/fuzz-expand.md", import.meta.url);
-export const evidencePath = new URL("./fuzz-expand-results.jsonl.gz", import.meta.url);
-export const summaryPath = new URL("./fuzz-expand-summary.json", import.meta.url);
+import { artifactPath } from "./test-artifacts.mjs";
+export const reportPath = artifactPath("fuzz-expand.md");
+export const evidencePath = artifactPath("fuzz-expand-results.jsonl.gz");
+export const summaryPath = artifactPath("fuzz-expand-summary.json");
 export function classify(row) {
 	if (row.ok) return "green";
 	const text = row.diffs.join("\n");
@@ -42,7 +43,7 @@ export function saveReport(state) {
 		const first = rows[0];
 		lines.push(`### FX-${++index} ${first.api}/${first.dir}（${rows.length} 案）`, "", `首例 seed=${first.seed}，shape=${first.shape}，vision=${first.vision}，phase=${first.phase ?? "compare"}，captureCount=${first.captureCount}；JSONL L${first.line}。`, "", "```text", ...first.diffs.slice(0, 8).map((diff) => diff.slice(0, 1200)), "```", "", "逐案证据（seed:JSONL行）：" + rows.map((row) => `${row.seed}:L${row.line}`).join("、"), "");
 	}
-	lines.push("## 验证与残余风险", "", ...state.notes.map((note) => `- ${note}`), "", "没有 Git 元数据：`git status --short` exit 128；未执行 git add，但不能独立认证暂存区为空。外部边界不修复；本轮只扩测试，不修生产缺陷或反推 oracle。控制字符为合法 JSON 转义字符串，不包含非法 UTF-16 surrogate（该域另有冻结清洗规则，不在本轮新增要求内）。", "");
+	lines.push("## 验证与残余风险", "", ...state.notes.map((note) => `- ${note}`), "", "参照源码由官方 Git submodule 固定；本报告仅记录本次执行，不沿用历史 fork 的通过结论。外部边界不修复；测试不修生产缺陷或反推 oracle。控制字符为合法 JSON 转义字符串，不包含非法 UTF-16 surrogate（该域另有冻结清洗规则，不在本轮新增要求内）。", "");
 	writeFileSync(reportPath, lines.join("\n"));
 	return counts;
 }

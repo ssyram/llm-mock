@@ -4,8 +4,8 @@ pub fn restore(
     body: &str,
     previous: Option<&(String, Vec<Value>)>,
 ) -> Result<Value, (&'static str, &'static str)> {
-    let mut request: Value =
-        serde_json::from_str(body).map_err(|_| ("invalid_request", "invalid JSON"))?;
+    let mut request = crate::api::openai_codex_responses::parse_request::parse_request(body)
+        .map_err(|_| ("invalid_request", "invalid JSON"))?;
     if request["type"] != "response.create" || !request["input"].is_array() {
         return Err((
             "invalid_request",

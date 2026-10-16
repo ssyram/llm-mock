@@ -40,7 +40,7 @@ export function canonicalAm(context, model, options) {
 		} else if (msg.role === "toolResult") {
 			if (!toolNames.has(msg.toolCallId)) throw new Error(`unpaired tool result ${msg.toolCallId}`);
 			const blocks = msg.content.map((b) => b.type === "image"
-				? msg.isError ? { text: "[image omitted: error tool results cannot contain images]" } : { data: b.data, mimeType: b.mimeType }
+				? { data: b.data, mimeType: b.mimeType }
 				: { text: sanitize(b.text) });
 			const hasImages = blocks.some((b) => "data" in b);
 			let content = hasImages ? blocks : [{ text: blocks.map((b) => b.text).join("\n") }];

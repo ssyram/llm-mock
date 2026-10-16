@@ -83,11 +83,11 @@ test("Codex original surrogate instructions reach HTTP as escaped JSON", async (
 		instructions: JSON.parse(sent.json).instructions }));
 });
 
-test("Codex scalar domain: identity and zstd reject lone surrogates, preserve valid text", async (t) => {
+test("Codex instructions: identity and zstd normalize lone surrogates, preserve valid text", async (t) => {
 	const server = await startServer(await freePort());
 	try {
 		for (const encoding of ["identity", "zstd"]) {
-			for (const instructions of ["s\ud800x", "s\udc00x", "s�x", "s😀x", "s\\ud800x"]) {
+			for (const [instructions, expected] of [["s\ud800x", "sx"], ["s\udc00x", "sx"], ["\ud800", "You are a helpful assistant."], ["s�x", "s�x"], ["s😀x", "s😀x"], ["s\\ud800x", "s\\ud800x"]]) {
 				const before = readdirSync(server.captureDir).filter((name) => name.startsWith("req-")).length;
 				const json = JSON.stringify({ model: "mock-gpt", instructions, input: [], stream: true })
 					.replace("😀", "\\ud83d\\ude00");
@@ -97,24 +97,15 @@ test("Codex scalar domain: identity and zstd reject lone surrogates, preserve va
 					body: encoding === "zstd" ? zstdCompressSync(Buffer.from(json)) : json,
 					signal: AbortSignal.timeout(5000),
 				});
-				const rejected = instructions === "s\ud800x" || instructions === "s\udc00x";
-				assert.equal(response.status, rejected ? 400 : 200);
-				let errorMessage;
-				if (rejected) {
-					const error = await response.json();
-					errorMessage = error.error.message;
-					assert.equal(error.error.type, "invalid_request_error");
-					assert.match(errorMessage, /invalid JSON body:.*(surrogate|hex escape)/);
-				} else {
-					await response.text();
-					const files = readdirSync(server.captureDir).filter((name) => name.startsWith("req-")).sort();
-					const record = JSON.parse(readFileSync(`${server.captureDir}/${files.at(-1)}`, "utf8"));
-					assert.equal(record.request.context.messages[0].content, instructions);
-				}
-				const after = readdirSync(server.captureDir).filter((name) => name.startsWith("req-")).length;
-				assert.equal(after - before, rejected ? 0 : 1);
-				t.diagnostic(JSON.stringify({ encoding, instructions, status: response.status,
-					capturesAdded: after - before, errorMessage, escapedPair: json.includes("\\ud83d\\ude00") }));
+				assert.equal(response.status, 200);
+				await response.text();
+				const files = readdirSync(server.captureDir).filter((name) => name.startsWith("req-")).sort();
+				const record = JSON.parse(readFileSync(`${server.captureDir}/${files.at(-1)}`, "utf8"));
+				assert.equal(record.request.context.messages[0].content, expected);
+				const after = files.length;
+				assert.equal(after - before, 1);
+				t.diagnostic(JSON.stringify({ encoding, instructions, expected, status: response.status,
+					capturesAdded: after - before, escapedPair: json.includes("\\ud83d\\ude00") }));
 			}
 		}
 	} finally {

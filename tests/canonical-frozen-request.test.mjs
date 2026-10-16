@@ -77,15 +77,16 @@ test("Frozen Google G18: all three signed empty/call carriers survive", () => {
 	assert.equal(out[2].id, "echo");
 });
 
-test("Frozen Anthropic C08: every error image is replaced in place; image-only has a prefix", () => {
+test("Official v1.2.0 Anthropic C08: error images survive in place; image-only has a prefix", () => {
 	const model = { ...makeModel("anthropic-messages", 1234), input: ["text", "image"] };
 	const call = { type: "toolCall", id: "call", name: "echo", arguments: {} };
 	const image = { type: "image", data: "AQID", mimeType: "image/png" };
 	const result = { role: "toolResult", toolCallId: "call", toolName: "ignored", content: [image, { type: "text", text: "middle" }, image], isError: true };
 	const canonical = (value) => canonicalAm({ messages: [assistant(model, [call]), value] }, model).context.messages[1];
-	const note = "[image omitted: error tool results cannot contain images]";
-	assert.equal(canonical(result).content[0].text, `${note}\nmiddle\n${note}`);
-	assert.equal(canonical({ ...result, content: [image], isError: false }).content[0].text, "(see attached image)");
+	assert.deepEqual(canonical(result).content, [{ data: "AQID", mimeType: "image/png" }, { text: "middle" }, { data: "AQID", mimeType: "image/png" }]);
+	assert.equal(canonical(result).isError, true);
+	for (const isError of [false, true]) assert.deepEqual(canonical({ ...result, content: [image], isError }).content,
+		[{ text: "(see attached image)" }, { data: "AQID", mimeType: "image/png" }]);
 	assert.throws(() => canonicalAm({ messages: [result] }, model), /unpaired/);
 });
 

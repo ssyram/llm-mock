@@ -1,5 +1,7 @@
 // Usage: node tests/duality.mjs [protocol aliases or full API names ...]
 import { writeFileSync } from "node:fs";
+import { artifactPath } from "./test-artifacts.mjs";
+import { matrixSummaryText } from "./matrix-summary.mjs";
 import { startServer, freePort } from "./harness.mjs";
 import { loadCorpora, corpusContexts, syntheticContexts, replyCases } from "./corpus.mjs";
 import { additionalContexts, corpusReplies, additionalReplies } from "./extended-matrix-cases.mjs";
@@ -18,7 +20,7 @@ const protocols = wanted.length ? wanted.map((name) => {
 const corpora = loadCorpora();
 const results = [];
 const startedAt = new Date().toISOString();
-const resultPath = new URL("./matrix-ten-results.json", import.meta.url);
+const resultPath = artifactPath("matrix-ten-results.json");
 const save = () => writeFileSync(resultPath, JSON.stringify({ startedAt, updatedAt: new Date().toISOString(), results }, null, 2));
 const port = await freePort();
 const server = await startServer(port);
@@ -32,17 +34,17 @@ try {
 		await replyDirection(api, model, server, results, [...replies, ...corpusReplies(corpora), ...additionalReplies(model, replies[0].message), ...w06ReplyCases(model, replies[0].message), ...w08ReplyCases(model, replies[0].message)]);
 		save();
 		const protocolResults = results.filter((r) => r.api === api);
-		console.log(`${api}: ${protocolResults.filter((r) => r.ok).length} pass / ${protocolResults.filter((r) => !r.ok).length} fail`);
+		console.log(`${api}: ${matrixSummaryText(protocolResults)}`);
 	}
 } finally {
 	await server.stop();
 	save();
 }
 const failed = results.filter((r) => !r.ok);
-console.log(`\n=== matrix: ${results.length - failed.length} pass / ${failed.length} fail ===`);
+console.log(`\n=== matrix: ${matrixSummaryText(results)} ===`);
 for (const r of results) {
-	console.log(`${r.ok ? "PASS" : "FAIL"} ${r.api}/${r.dir}/${r.name}`);
+	console.log(`${!r.ok ? "FAIL" : r.outcome === "expected-rejection" ? "EXPECTED-REJECTION" : "PASS"} ${r.api}/${r.dir}/${r.name}`);
 	if (!r.ok) for (const d of r.diffs.slice(0, 8)) console.log(`    ${d}`);
 }
-console.log(`Full evidence: ${resultPath.pathname}`);
+console.log(`Full evidence: ${resultPath}`);
 if (failed.length) process.exitCode = 1;

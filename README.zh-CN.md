@@ -106,8 +106,21 @@ cargo build
 
 ## 测试与语料
 
-- `cargo test`：全协议单元测试
-- `tests/`：对偶 harness——合成用例＋可选私有语料 × 全部协议 × 双方向深比较（含 fuzz）。`node tests/duality.mjs` 明确统计缺失语料 skip；`node tests/fuzz.mjs` 仅使用合成数据。`tests/pi-ai-imports.mjs` 要求 Node ≥23，以及同级 `../pi-mono/packages/ai` 锁定 checkout 和其依赖。
+`cargo build` 和普通服务端使用不要求 Node、pi-ai、Pi 或 OpenCode。开发推荐安装 **Node 24 LTS**（见 `.nvmrc`），递归克隆：
+
+```sh
+git clone --recursive https://github.com/ssyram/llm-mock.git
+cd llm-mock
+# 已有克隆：git submodule update --init --recursive
+sh tests/setup.sh  # 可选：安装参照源码的锁定 npm 依赖
+cargo test
+```
+
+- `cargo test` 始终运行不依赖 Python 的 Rust 核心单测；可选入口先独立探测并运行 Python 脚本路由组，再探测 Node，条件具备时运行 Node 单测、对偶矩阵、transport、完整 800-seed fuzz、property，以及教程约定的 Pi／OpenCode CLI 往返。只跑 Python 组用 `cargo test --test optional_suites -- python`；只跑 Node 组用 `cargo test --test optional_suites -- node`。测试命令本身不安装依赖或下载 submodule。
+- Python、zstd 及客户端有各自的依赖要求，不作为无依赖核心单测的隐含前提。缺 Python、Node（最低 23）、pi-ai 源码或依赖、Pi、OpenCode 时，对受影响的测试组明确输出 `WARNING: SKIP ... NOT VERIFIED`；缺 zstd CLI／Node 原生 zstd API 时跳过依赖 Codex 压缩的组。无关测试继续运行；已安装工具损坏、参照版本不符／被修改及断言失败均使 `cargo test` 失败。跳过不等于证明对偶，正式开发仍须取得约定的协议对偶证据。
+- 官方参照是 `vendor/pi-mono` Git submodule：[earendil-works/pi](https://github.com/earendil-works/pi)，**v1.2.0**，固定 commit **`06a466935536f8c9bcacb2d5efc0fc021be1bdff`**。pi-messages 属于同一源码树。Git gitlink 锁源码，submodule 内的 `package-lock.json` 锁 npm 依赖；升级后须重跑矩阵。旧 fork commit `371cc25` 的历史报告不证明此官方版本已通过。
+- 日志和新生成证据统一写入 `target/test-artifacts/`（可用 `MOCK_TEST_ARTIFACTS` 指定），不覆盖历史报告。独立 Node 命令可用 `MOCK_SERVER_BIN` 选择服务端；Cargo 自动传入本轮构建的可执行文件，兼容自定义 target 目录。缺私有语料时明确跳过对应会话，仍运行合成用例。
+- 矩阵分别统计成功 `matched`、严格断言的 `expected rejections` 和失败；预期拒绝不计为成功对偶。Codex `instructions` 的孤立 surrogate 在服务端按 canonical 删除，净化为空时用默认系统提示；合法 emoji、U+FFFD、字面 `\\ud800` 和其他 JSON 字段不受此净化影响，详见 `api/family-variants.md`。
 - 语料捕获插件 `extensions/llm-corpus-capture.ts`：挂到真实会话即存统一 Message 语料（采语料才需要真模型凭据；mock 本身永远不需要）
 
 ## 目录
@@ -116,4 +129,4 @@ cargo build
 
 ## 注意
 
-语料/捕获目录（`.pi/mock-corpus`、`.tmp-*`、`captures`）及私有生成证据由 `.gitignore` 排除，切勿强制加入。发布版历史报告按需使用匿名路径、标识与合成正文；详见[发布脱敏审计](docs/design/mock-llm-server/release-sanitize.md)。锁定参照：本地 pi-mono `packages/ai` @1.2.0，升级须整批重跑对偶矩阵。
+语料/捕获目录（`.pi/mock-corpus`、`.tmp-*`、`captures`）及私有生成证据由 `.gitignore` 排除，切勿强制加入。发布版历史报告按需使用匿名路径、标识与合成正文；详见[发布脱敏审计](docs/design/mock-llm-server/release-sanitize.md)。锁定参照：`vendor/pi-mono` 内的官方 pi-ai v1.2.0，升级须整批重跑对偶矩阵。

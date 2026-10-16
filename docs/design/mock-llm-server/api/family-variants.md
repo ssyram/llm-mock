@@ -120,13 +120,15 @@ Codex 包装层：C:744–789 将 response.done/completed/incomplete 归一为 r
 
 canonical 是字段投影后的等价类，**不是恢复丢失信息**。以下规则按 §2/§3 条件组合，不能把 tests 中固定fixture选项外推为协议常量。
 
-**本仓库请求接纳域（final-four 处置）**：统一文本为 Rust `String` 的 Unicode 标量域。Codex 顶层 `instructions` 不清洗孤立 surrogate，锁定客户端可将其序列化为合法 JSON 转义 `\ud800`/`\udc00`；本仓库解压后 JSON 解码明确返回 HTTP 400 `invalid_request_error`，不替换、不删除、不产生 capture。此为本地模型定义域限制，不是协议无载体、不可逆丢弃或 pi-ai 外部边界，不算对偶通过。U+FFFD、合法 surrogate pair、字面反斜杠文本均保留；identity/zstd 适用相同规则。Responses/Codex/Mistral 的 Unicode session 则先在锁定客户端 HTTP Headers 的 ByteString 转换中失败、fetch 尚未调用，服务器无法容错未发送的请求；单独列为外部边界，不能推及 Unicode JSON 请求体。逐案网络计数、原红保留与复跑结果见 [final-four.md](../final-four.md)。
+**本仓库请求接纳域（本轮用户要求修复）**：锁定客户端的 Codex 顶层 `instructions` 可含孤立 surrogate，并能发出合法 JSON 转义。服务端在解析此字段时删除未配对 UTF-16 surrogate，采用既有 canonical 的文本净化规则；若原非空文本仅含这些字符，净化为空后采用 canonical 的默认 `You are a helpful assistant.`。这是明确有损转换，不声称原字符精确往返。其他字段仍严格解析，不全局替换 JSON 字符串；U+FFFD、合法 surrogate pair、字面反斜杠文本保持不变。HTTP identity/zstd 与 WebSocket 使用同一 Codex 解析入口。历史 final-four 的 400 拒收结果仅描述旧实现，不能当作当前要求已满足。
+
+Responses/Codex/Mistral 的 Unicode session 在锁定客户端构造 HTTP Headers 时因 ByteString 约束拒绝，服务器未收到请求。矩阵须实际断言明确拒绝原因、fetch 调用数为0且无 capture，再单列为 expected-rejection；不得混入成功对偶数，意外成功、不同错误或产生网络调用都计失败。Unicode JSON 正文不受这一请求头限制。
 
 | 规则 | 精确规则与源码 | 对账与裁决 |
 |---|---|---|
 | Q 系统/工具重放 | TR:58–120；TX:6–39；默认折叠，支持mid-convo时保留后续更新；tools remove/re-add按名覆盖 | tests/canonical-family-variants.mjs:38–39 恒false，仅默认compat适用；不是全compat canonical |
 | Q 全消息预处理 | T:12–57 图片占位；T:95–145跨模型；T:167–232删error/aborted、补No result provided、延后system | tests/canonical-ores.mjs:43 / canonical-gai.mjs:27复用T，基础行为一致，但ID回调简化，不能覆盖真实provider条件 |
-| Q Unicode | utils/sanitize-unicode.ts:21–24 删除未配对surrogate；适用S/G调用该函数的文本，**不泛化到Codex instructions**（C:552–558） | canonical-ores.mjs:52–61,86,102；canonical-gai.mjs:35–37,48–56,65未调用清洗；**tests漏规则，源码正确** |
+| Q Unicode | utils/sanitize-unicode.ts:21–24 删除未配对surrogate；适用S/G调用该函数的文本；Codex客户端instructions仍不清洗（C:552–558），但本轮服务端在该字段接纳时采用同一净化规则，见上文 | canonical-ores.mjs:52–61,86,102；canonical-gai.mjs:35–37,48–56,65未调用清洗；**tests漏规则，源码正确** |
 | Q Responses ID/签名 | S:154–176,269–326：拆call/item、同源条件、fc_/ctc_前缀；text签名取v1/legacy，超长短hash；S:263–268非法thinking签名直接抛 | canonical-ores.mjs:43只规范整个ID；:83–86恒造text ID忽略签名；:76–80吞JSON异常；:88–96无namespace。**tests不完整/错误，源码权威** |
 | Q Responses tool output | S:81–108 文本先聚合，视觉图随后，空值固定占位；OD:178–191支持parts | canonical-ores.mjs:100–108,170总把输出变text，未覆盖视觉图片。**不能用该canonical断言图片必丢** |
 | Q 严格schema | S:361–394默认strict=false；Azure未显式strict，constrainedSampling优先，supportsStrictMode默认true；Codex strict:null（C:549,577）；Vertex parametersJsonSchema且Gemini>=3才strict（G:380–435） | canonical-family-variants.mjs:37–45用constrainedSampling解析，默认工具与显式json_schema用例可对齐；**这不证明Azure/Codex wire strict字段相同**。测试:46–58仅证明Azure constrained prefer schema；grammar/dynamic工具未覆盖 |

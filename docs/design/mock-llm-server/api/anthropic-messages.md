@@ -6,7 +6,7 @@
 
 ### 权威、方向与引用
 
-本稿以 `<pi-mono>/packages/ai/src` 的当前源码为客户端权威，不以旧稿、测试注释或测试通过推定实现正确。下列缩写是 **file:line 的文件别名**；`src/`、`tests/` 相对 mock-with-pi，其他客户端文件相对上述只读根。
+当前参照为官方 v1.2.0 commit `06a466935536f8c9bcacb2d5efc0fc021be1bdff`，源码根 `vendor/pi-mono/packages/ai/src`。C08 已按此版本修正；其余历史源码行号来自旧 fork，不能不经定位直接套用。旧 fork 的错误结果图片降级规则不属于此官方版本。下列缩写是 **file:line 的文件别名**；`src/`、`tests/` 相对 mock-with-pi，其他客户端文件相对上述只读根。
 
 | 别名 | 文件 |
 |---|---|
@@ -69,7 +69,7 @@
 | `ToolCall.name/arguments` | name 普通原样、OAuth 固定表大小写；arguments 缺失时 `{}`（AM:124–131,1484–1489） | `tool_use.{name,input}` | name 原样并写 id→name 表；input 仅 object 可保留，否则 `{}`（M:148–155） | 精确往返：普通模式 object 参数；确定性变换：OAuth 名称/缺省 object；非 object 为 decoder 投影，不是协议限制 |
 | `ToolCall.thoughtSignature/namespace` | thoughtSignature 跨模型先删；本协议 converter 两字段始终不输出（TM:129–132；AM:1484–1490） | 无 | None（M:154–155） | 丢弃（wire 不携带） |
 | toolResult `role/content` | 连续结果合一条 user，各自一个 tool_result；无图 text 以单换行拼成串；有图保持块，纯图前插 `(see attached image)`（AM:137–183,1507–1522） | user.content 中 `tool_result.content:string/blocks` | 拆成逐条 toolResult；串→单 text 块（M:79–105） | 确定性变换：消息合并可拆，文本块边界不可恢复、纯图多占位文本 |
-| toolResult `isError` 与图片 | isError 原样；错误结果每张图**原位置分别**换固定文本，再走无图拼接；非 vision 替换更早发生（AM:1330–1345；TM:34–55） | `is_error`；`content` | isError 原样、转换后内容（M:91–103） | 精确往返：isError；确定性变换：图片替换，见 C08 |
+| toolResult `isError` 与图片 | 官方 v1.2.0 的 convertToolResult 对成功／错误结果均调用 convertContentBlocks；vision 图片保值保序，不因 isError 替换。非 vision 在 transformMessages 阶段降级（AM:1330–1335,137–182；TM:34–55） | `is_error`；`content` | isError 与图片块按 wire 原样解码（M:91–103） | 精确往返：isError 和 vision 图片；确定性变换：非 vision 与纯图占位，见 C08 |
 | toolResult `toolName` | 不发送（AM:1340–1345） | 无；引用已有 tool_use_id | 从之前遇到的同 id tool_use 反查，后出现同 id 覆盖；找不到报错（M:87–90,149） | 丢弃：原 toolName；重建值是反查推导，原值与调用名不同不会保留；无配对时 decode 输入契约拒绝（已解析内容），不是 T |
 | 孤儿 toolCall 的缺失结果 | 下一个 assistant/user 或收尾时，逐个补未配对结果，text=`No result provided`、isError=true；system 移到结果后（TM:159–185,192–232） | 合成 `tool_result` | 普通结果重建（M:79–105） | 确定性变换：新增结果；不是服务端原样恢复 |
 | 所有消息 `timestamp`；toolResult `durationMs/details/usage/nestedCalls` | 不进入 wire（TY:541–635；AM:1378–1522） | 无 | timestamp=0、durationMs=None；其余不在 Rust 此结果结构中（M:36–42,69–73,96–103,161–176） | 丢弃（wire 不携带）；0 为 mock 占位，不是 pi 注入 |
@@ -149,12 +149,12 @@ mock 序列为 message_start → 每块 start/delta/stop → message_delta → m
 |---|---|---|
 | C01／Q 输入 | 旧 Context.systemPrompt 非空或 tools 非空时前插 system（timestamp=0）；provider stream 期待 TranscriptContext。transform 第一遍先把 null/undefined content 变 []，再图片降级、跨模型变换；第二遍才过滤错误历史和补结果。 | TR:10–33；TM:62–75,159–232 |
 | C02／Q system | 默认：非空 contentText 按 system 顺序双换行连接；sections 用 Map 按名 patch，null 删除；tools 依序 remove→set；timestamp 原重放取首条，但 wire 不发。再将 content 与最终 section 值双换行连接。非 OAuth 空文本不发 system；decode 有 system 或有有效 tools 才建 timestamp=0 的头部。mid-system：后续文本用 `Removed system prompt section "name".` 或 `Updated system prompt section "name":\n\nvalue` 框架，暂存到下一 assistant 前/收尾，decode 不反解框架。 | TR:58–95,108–119；TX:6–40；AM:1234–1242,1378–1399,1438–1439,1526；D:112–142 |
-| C03／Q 图片能力 | model.input 不含 image 时，user 图片→`(image omitted: model does not support images)`，toolResult 图片→`(tool image omitted: model does not support images)`；相邻图片只产生一份，前一 text 已等于该占位串也抑制紧随图片重复。含 image 时不降级。发生在错误结果图片专用替换之前。 | TM:12–56,73–75；AM:1330–1339 |
+| C03／Q 图片能力 | model.input 不含 image 时，user 图片→`(image omitted: model does not support images)`，toolResult 图片→`(tool image omitted: model does not support images)`；相邻图片只产生一份，前一 text 已等于该占位串也抑制紧随图片重复。含 image 时不降级。官方 v1.2.0 没有按错误结果专门替换图片的后续步骤。 | TM:12–56,73–75；AM:1330–1339 |
 | C04／Q thinking | same＝api/provider/model 三等。redacted：same 保留 opaque，否则删。普通：same 且 signature truthy 先保留；其余 thinking 空白删，same 非空保留、cross 非空转 text。AM 再用 signature truthy 且 trim 非空判有效签名：thinking 空白且无有效签名删；无有效签名的非空 thinking 默认转 text，allowEmptySignature 时保留 thinking 并统一 signature=""；有效签名保留、文本清洗。redacted decode 文字固定 `[Reasoning redacted]`。 | TM:95–116；AM:1449–1482；M:134–146 |
 | C05／Q ID 与缺失结果 | 只对 cross-model toolCall 执行 `id.replace(/[^a-zA-Z0-9_-]/g,"_").slice(0,64)`，后续 toolResult 同步映射；同模型不改。第二遍在新 assistant/user 或末尾关闭待处理调用，为缺结果的每个调用补 text=`No result provided`、isError=true 的结果，并把夹入 system 放到结果后；error/aborted assistant 整条删。 | TM:82–88,129–142,159–232；AM:1326–1327 |
 | C06／Q 空白/Unicode/块形态 | user 字符串先 trim 判空，发送清洗后原串；user 数组先清洗再删 trim 空 text，仍保持数组；assistant text 先 trim 判空再清洗，空内容 assistant 删。清洗仅移除未配对 UTF-16 surrogate、保留合法对；用于已列出的文本路径及 system/thinking/toolResult 文本，不用于 name/description/参数 JSON/签名/图片数据。特别地 surrogate-only 字符串或 assistant text 可能清洗成已发送的空串。 | AM:153,158–162,1230,1239,1383,1400–1448,1469–1481；`utils/sanitize-unicode.ts:20–24` |
 | C07／Q 结果拼接与配对 | 连续 toolResult 合成单 user，按原顺序一块一个结果；无图片时全部 text 按单换行拼接（不 trim、不删空 text）；有图保留 text/image 顺序，完全没有 text 才前插 `(see attached image)`。decode 串→一个 text 块；toolName 用此前同 id 最近写入的 tool_use 名称，不用原 toolResult.toolName；找不到报错。 | AM:137–183,1507–1522；M:79–105,148–153 |
-| C08／Q 错误结果图片 | vision 模型下 isError=true 的每一个 image **在原位置**换成 `[image omitted: error tool results cannot contain images]`，然后按无图路径 join("\n")。例如 `[image,"middle",image]`→`note\nmiddle\nnote`，不是 `middle\nnote`。非 vision 时先执行 C03，故不再用此 note。 | AM:1330–1345,151–153；TM:34–55,73–75 |
+| C08／Q 结果图片与错误标志 | 官方 v1.2.0 中 isError 仅映射 is_error，不改变内容转换。vision 的 `[image,"middle",image]` 保持三块原顺序和图片值；纯图结果在图片前补 `(see attached image)`；无图片时将文本以单换行拼接并清洗 surrogate。非 vision 先执行 C03。 | 官方 AM:1330–1335、137–182；TM:34–55,73–75 |
 | C09／Q 缓存 | retention＝显式值，否则 env=long 时 long，否则 short；none 不注入，long 且支持才 ttl=1h。给顶层每个 system text、允许缓存的工具列表最后有效工具加标记；native placeholder 在初始工具之后，不抢其缓存位。conversation 只检查当前最后一条：user/system 的指定类型末块加标记，字符串包成单 text 数组；最后是 assistant 不向前找。此操作发生在 effort marker 插入前；后续 tool_addition 定义转换不传 tool cacheControl。decode 忽略标记，但保留字符串→数组的形态改变。 | AM:69–92,1197–1212,1219–1242,1255–1265,1395,1528–1552,1658；M:68–113 |
 | C10／Q OAuth/工具变化/betas | OAuth key 为 includes(sk-ant-oat)，前插 system 文本 `You are Claude Code, Anthropic's official CLI for Claude.`；固定表工具名做大小写不敏感 lookup（表见 AM:101–119），不匹配则不改；作用于 tools、历史 tool_use、native tool_removal，不改 forced tool_choice.name。native 条件＝mid-system && mid-tool && 初始工具非空；后续同次同名 addition 抑制 removal；顶层加保留名 placeholder，decoder 按名过滤。betas：显式 header 后写覆盖，null→[]，字符串 split逗号/trim/去空/Set；未配置则按次序拼接并去重：OAuth→`claude-code-20250219`、`oauth-2025-04-20`；currentTools非空且!eager→`fine-grained-tool-streaming-2025-05-14`；model.reasoning且thinkingEnabled===true且(interleavedThinking??true)且!forceAdaptive→`interleaved-thinking-2025-05-14`；allowedFallbackModels非空→`server-side-fallback-2026-07-01`；managed→`mid-conversation-output-config-2026-07-01`、`thinking-binding-controls-2026-08-01`；native→`inline-tools-2026-09-15`。 | AM:101–131,190–208,1011–1012,1113–1154,1194–1203,1219–1232,1261,1309–1314,1384–1397,1488,1579–1583；D:127–131 |
 | C11／Q schema/strict | 默认非 strict：只保留根 type=object、properties??{}、required??[]，nested 原样。strict：深拷贝 schema；每个 object 的所有 property 变 required，原可选且不允许 null 的 property 包为 anyOf[原schema,{type:null}]；additionalProperties=false；递归 properties/items/允许的 anyOf，最后根强制上述 legacy 三字段。拒绝 boolean、根非 object、tuple items、非数组/空 anyOf、含 object/array 的 anyOf、带 properties 却非 type=object、未知 required 名、非 string[] required、非法 properties/additionalProperties；公共不支持键集合为 $ref/$defs/definitions/allOf/oneOf/patternProperties/dependentSchemas/dependencies/unevaluatedProperties/propertyNames/contains/prefixItems/not/if/then/else。AM 还拒绝 minimum/maximum/exclusiveMinimum/exclusiveMaximum/multipleOf/maxItems/uniqueItems/minContains/maxContains/minProperties/maxProperties，minItems 仅0/1，format 仅 date-time/time/date/duration/email/hostname/uri/ipv4/ipv6/uuid。JSON-schema require 不支持就本地抛错；prefer 退非 strict；grammar 配置不走 grammar 编码。服务端400 invalid_request_error 且命中三个固定 strict-limit 文本时，只对 prefer 降级重建重试并加 diagnostic；已经开始的流不走此降级。 | CS:15–32,38–143,225–248；AM:664–687,1588–1618,1631–1658 |
@@ -209,7 +209,7 @@ mock 序列为 message_start → 每块 start/delta/stop → message_delta → m
 ### 不可逆不是一种故障
 
 - **客户端已丢失**：Q 中文本块拼接、system section 名和补丁历史、非 strict schema 根键、所有历史时间/usage/responseId 等元数据、内容签名与工具 namespace，没有足够 wire 信息恢复；两种原输入可得到同一 wire（C02/C06–C11；AM:137–183,1378–1522,1639–1650）。canonical 只定义等价类，不恢复这些差别。
-- **客户端确定降级**：非 vision 图片、跨模型思考、unsigned thinking、错误结果图片和 cross-model ID 规范化均按 C03–C08；“确定性”不等于单射，ID 规范化无碰撞保护（TM:12–56,95–145；AM:1326–1345,1458–1482）。
+- **客户端确定降级**：非 vision 图片、跨模型思考、unsigned thinking 和 cross-model ID 规范化均按 C03–C08；“确定性”不等于单射，ID 规范化无碰撞保护（TM:12–56,95–145；AM:1326–1345,1458–1482）。
 - **wire 有而 mock 不读**：历史 effort 的逐条归属、thinking.display/binding、betas/fallbacks 等已发字段；metadata-only session 在路由中丢失。不得叫 wire 天生无法表达（AM:1215,1271–1295,1317–1319,1563–1576；D:46–65；V:8–26；protocol.rs:75；server.rs:118）。后两个裸文件名分别是 `src/mounts/protocol.rs`、`src/server.rs`。
 - **回复侧独立损失**：R 丢源 metadata/签名字段；重算 total、注入目标身份/费率/时间；redacted 文字固定；unsupported stop 降级。四项 usage、可选 reasoning/1h计数、responseId 与普通签名并非普遍不可逆（E:8–66,98–133；AM:581–598,698–890）。
 
@@ -256,7 +256,7 @@ Q/R组装的输入拒绝（strict require、孤立结果、assistant image）没
 | `anthropic-sse-parsing.test.ts:358–700` | JSON修复、start自带内容、refusal/sensitive、delta无usage、未知事件 | 源码已核对 AM:391–569,729–890,1663–1688；本次未执行上游测试。 |
 | `anthropic-empty-thinking-signature-compat.test.ts:82–133` | 默认空签名降 text、有签名空 thinking、allowEmptySignature、跨模型 | 源码已核对 TM:95–116/AM:1458–1482；未执行上游测试。 |
 | `anthropic-mid-conversation-effort.test.ts:92–195` | 历史 marker、默认high、跨provider/legacy不造marker、非managed顶层effort/betas | 源码已核对 AM:1271–1299,1499–1505,1563–1576；未执行上游测试。 |
-| 本次内存 Node 探针（无新增文件） | 对真实 am.stream 注入本地 fetch，onPayload 只复制请求；验证 user 数组不折叠、纯图结果补文字、错误双图原位替换、无message_start但有有效stop可成功、未配对surrogate删除；同时对照 canonicalAm 的两个图片反例 | 5组行为断言通过；不访问厂商、不输出凭据。反例输入和期望见 C06–C08 与§4裁决。 |
+| 历史 fork 内存 Node 探针 | 曾验证旧 fork 的错误图片转文本等行为 | 只属于旧 fork；不作为当前官方 C08 的通过证据。当前回归见 `tests/anthropic-official-reference.test.mjs`，固定断言官方 wire、Rust 解码及独立 canonical。 |
 
 ### 本次验证与范围
 

@@ -1,11 +1,8 @@
-// pi-ai import shim: the repo-local pi-mono checkout's dist/ is stale
-// (built against the pre-rename @sinclair/typebox), so import from src/.
-// Node >= 23 strips TS types natively. Locked at pi-ai 1.2.0 (HEAD 371cc25).
-import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
+import { piAiSrc, referenceState } from "./pi-ai-reference.mjs";
 
-const testsDir = dirname(fileURLToPath(import.meta.url));
-export const piAiSrc = resolve(testsDir, "../../pi-mono/packages/ai/src");
+const reference = referenceState();
+if (reference.missing) throw new Error(reference.missing);
+export { piAiSrc };
 
 export const piAi = await import(`${piAiSrc}/index.ts`);
 export const occ = await import(`${piAiSrc}/api/openai-completions.ts`);

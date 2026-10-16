@@ -1,4 +1,6 @@
 import { writeFileSync } from "node:fs";
+import { artifactPath } from "./test-artifacts.mjs";
+import { matrixSummaryText } from "./matrix-summary.mjs";
 import { startServer, freePort } from "./harness.mjs";
 import { loadCorpora, corpusContexts, syntheticContexts, replyCases } from "./corpus.mjs";
 import { additionalContexts, corpusReplies, additionalReplies } from "./extended-matrix-cases.mjs";
@@ -13,7 +15,7 @@ import { codex } from "./pi-ai-imports.mjs";
 const results=[];
 const corpora=loadCorpora();
 const startedAt=new Date().toISOString();
-const save=()=>writeFileSync(new URL("./transport-unblock-variants.json",import.meta.url),JSON.stringify({startedAt,updatedAt:new Date().toISOString(),results},null,2));
+const save=()=>writeFileSync(artifactPath("transport-unblock-variants.json"),JSON.stringify({startedAt,updatedAt:new Date().toISOString(),results},null,2));
 const port=await freePort();const server=await startServer(port);
 async function run(variant,api,canonical,options) {
  const model={...makeModel(api,port),...(api==="google-vertex"?{baseUrl:server.mistralBaseUrl+"/v1"}:{})};
@@ -28,7 +30,7 @@ async function run(variant,api,canonical,options) {
  const replies=replyCases({api,provider:model.provider,id:model.id});
  await replyDirection(api,model,server,local,[...replies,...corpusReplies(corpora),...additionalReplies(model,replies[0].message),...w06ReplyCases(model,replies[0].message),...w08ReplyCases(model,replies[0].message)],options);
  results.push(...local.map(r=>({...r,variant})));
- save();console.log(`${variant}: ${local.filter(r=>r.ok).length} pass / ${local.filter(r=>!r.ok).length} fail`);
+ save();console.log(`${variant}: ${matrixSummaryText(local)}`);
 }
 try {
  await run("codex-websocket","openai-codex-responses",canonicalCodex,{transport:"websocket"});

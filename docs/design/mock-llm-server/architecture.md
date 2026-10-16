@@ -6,7 +6,7 @@
 ## Task Overview
 
 **问题对象**：pi-ai 的对偶 Mock Server——解析厂商协议 request 为统一 Message，执行注册脚本，将 AssistantMessage 编码为同协议 reply。
-**参照系**：锁定 pi-ai（本地 pi-mono `packages/ai` @1.2.0, HEAD `371cc25`）= wire contract 代表 + 对偶测试 oracle。
+**参照系**：官方 pi-ai v1.2.0（`https://github.com/earendil-works/pi.git`，`vendor/pi-mono` Git submodule，commit `06a466935536f8c9bcacb2d5efc0fc021be1bdff`）= wire contract 代表 + 对偶测试 oracle。pi-messages 与其他适配器随同一 gitlink 固定；历史 fork `371cc25` 的结果不自动适用于此官方版本。
 **实现**：Rust（用户裁决：利于推理）；测试 harness：TypeScript 运行锁定 pi-ai。
 
 ## Q
@@ -86,7 +86,7 @@
 **关键假设**
 
 - H1（=A4）pi-ai 适配器请求代表厂商协议公共子集 — 残余风险：其他 SDK 独有字段行为差异，由 decode 容忍策略与后续真实客户端测试吸收。
-- H2 锁定 checkout（`371cc25`）不被原地修改 — pi-mono 只读使用。
+- H2 官方参照 submodule 只读使用；测试入口核对 checkout 与 gitlink，并拒绝受检参照源码或依赖元数据的跟踪文件修改。
 - H3 对偶测试 fixture 覆盖全部声明支持的消息形态/内容块/停止原因 — fixture 清单在逆向规格中逐 API 声明。
 
 **模块级 invariant**
@@ -100,7 +100,7 @@
 - D2 Rust + serde 纯函数核心；HTTP 层（axum/tokio）在 M1 接线时引入，decode/encode 保持无 I/O 可单测。
 - D3 注册形态 = **挂载制（定稿）**：常驻 server + `add/remove/list`；挂载得到 `http://host:PORT/{name}/…` 路径前缀（主）或专属端口（兜底，防个别 SDK 剥路径前缀）；name/端口 → 脚本直绑，KeyID/matcher 降为脚本可选输入；一切行为（多轮、状态）在脚本内，推荐无状态范式＝按 transcript 中 assistant 计数决定 round 回复。保留字（v1/v1beta/openai/codex/messages/model/__admin 等）禁作 name。（取代旧「静态注册表」方案）
 - D4 编码粒度 = 每内容块单次 delta。
-- D5 锁定 = file: 依赖本地 pi-mono `packages/ai`（lockfile 锁定 + 记录 commit `371cc25`）。
+- D5 锁定 = 官方 pi 仓库的固定 commit Git submodule（`vendor/pi-mono`）；开发推荐 Node 24 LTS 与 `git clone --recursive`，以 submodule 内 `package-lock.json` 安装依赖。Rust 构建和普通使用不依赖 Node／参照源码／Pi／OpenCode。`cargo test` 自动探测并运行具备条件的测试组，缺项明确警告并跳过对应组；版本不符、环境损坏和内容失败不作为 skip。正式开发仍须证明既定协议对偶，缺环境不免除正确性义务。
 
 ### MVP 范围与子计划路线
 
@@ -113,4 +113,4 @@
 
 1. 首批 API 集合是否如 D1（默认已按此并行开工）。
 2. 注册形态 MVP 是否接受 D3（admin 端点后置）。
-3. 锁定形态 D5（依赖本地 checkout 存在）是否接受。
+3. D5 已由用户明确为官方固定 commit submodule；测试依赖可选、齐备则全自动运行，缺项警告不等于验证通过。

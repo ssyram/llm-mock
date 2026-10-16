@@ -1,0 +1,76 @@
+{
+  "formatVersion": 1,
+  "classification": "sanitized-real-excerpts",
+  "cases": [
+    {
+      "name": "post-tool-thinking",
+      "file": "post-tool-thinking.jsonl",
+      "source": {
+        "kind": "extension-capture",
+        "batch": 3,
+        "slot": 5
+      },
+      "rows": 5,
+      "sha256": "cd29663bfda6f39d81dab207027acf8908ac4e7ad28080365a86cdbb52f789d8"
+    },
+    {
+      "name": "thinking-tool-success",
+      "file": "thinking-tool-success.jsonl",
+      "source": {
+        "kind": "extension-capture",
+        "batch": 3,
+        "slot": 9
+      },
+      "rows": 5,
+      "sha256": "1777557ae74f00391d2ceffde581f7f5695d52541b7186de3a06f30bee4162f9"
+    },
+    {
+      "name": "provider-model-not-found",
+      "file": "provider-model-not-found.jsonl",
+      "source": {
+        "kind": "extension-capture",
+        "batch": 3,
+        "slot": 11
+      },
+      "rows": 3,
+      "sha256": "8561cf62f7999470abe674007a45a5c73f9cd7b8885628a00c98528494a523df"
+    },
+    {
+      "name": "provider-thinking-rejected",
+      "file": "provider-thinking-rejected.jsonl",
+      "source": {
+        "kind": "extension-capture",
+        "batch": 3,
+        "slot": 13
+      },
+      "rows": 3,
+      "sha256": "320c42e89ae66da5d808ff8f8f089bbf8776d1a86de6fd428abe13f2e4c76c31"
+    },
+    {
+      "name": "native-mixed-tool-rounds",
+      "file": "native-mixed-tool-rounds.jsonl",
+      "source": {
+        "kind": "native-session-excerpt",
+        "sessionId": "01a139a8-b5d1-7662-8f93-ad9dbbc5f7d7",
+        "lines": [
+          25,
+          26,
+          27,
+          28,
+          29,
+          33,
+          34,
+          35,
+          36
+        ],
+        "entryIds": [
+          "c3c87937",
+          "3aa9baa3"
+        ],
+        "completeConversation": false
+      },
+      "rows": 9,
+      "sha256": "613e31134a7d19830f81d5d6820a7378a186d123f1564ad95faf4310256c3133"
+    }
+  ]
+}

@@ -8,6 +8,8 @@ import { streamOptions } from "./models-shared.mjs";
 import { replyCases } from "./corpus.mjs";
 import { canonicalReply, compareReply } from "./canonical-reply.mjs";
 import { compareRequest } from "./canonical-request-comparison.mjs";
+import { requestDomain } from "./property-request-domain.mjs";
+import { headerRejection } from "./request-header-rejection.mjs";
 
 export const STREAMERS = {
 	"openai-completions": (m, ctx, opts) => occ.stream(m, ctx, opts),
@@ -27,6 +29,12 @@ export async function requestDirection(api, model, server, cases, canonicalFn, r
 		try {
 			const caseModel = { ...model, ...tc.modelOverrides, ...(tc.mount === "mistral" ? { baseUrl: server.mistralBaseUrl } : {}) };
 			const options = { ...streamOptions(api), ...tc.options };
+			const domain = requestDomain(api, caseModel, options);
+			if (domain) {
+				const rejection = await headerRejection(server, STREAMERS[api], caseModel, piAi.normalizeContext(tc), options, domain);
+				results.push({ api, dir: "req", name: tc.name, ...rejection });
+				continue;
+			}
 			const started = Date.now();
 			const cap = await withCapture(server, () =>
 				STREAMERS[api](caseModel, piAi.normalizeContext(tc), { ...options, signal: AbortSignal.timeout(10000) }).result(),

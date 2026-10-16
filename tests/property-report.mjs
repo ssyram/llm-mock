@@ -1,7 +1,9 @@
 import { writeFileSync } from "node:fs";
 
-const reportPath = new URL("../docs/design/mock-llm-server/property-tests.md", import.meta.url);
-const evidencePath = new URL("./property-results.json", import.meta.url);
+import { artifactPath } from "./test-artifacts.mjs";
+
+const reportPath = artifactPath("property-tests.md");
+const evidencePath = artifactPath("property-results.json");
 const definitions = `# W-08 后第二波：property / 不动点测试
 
 ## 冻结定义与数学表述

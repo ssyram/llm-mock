@@ -3,8 +3,13 @@ name = "mock-llm-server"
 version = "0.1.0"
 edition = "2021"
 
+[[test]]
+name = "optional_suites"
+path = "tests/optional_suites.rs"
+harness = false
+
 [dependencies]
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["raw_value"] }
 axum = { version = "0.8", features = ["ws"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }

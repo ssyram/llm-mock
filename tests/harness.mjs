@@ -9,21 +9,15 @@ import { streamOptions } from "./models-shared.mjs";
 
 const testsDir = dirname(fileURLToPath(import.meta.url));
 export const repoRoot = resolve(testsDir, "..");
-export const serverBin = join(repoRoot, "target/debug/mock-llm-server");
+export const serverBin = process.env.MOCK_SERVER_BIN ?? join(repoRoot, "target/debug/mock-llm-server");
 
 export function freePort() {
-	// 8799 per plan; fall back to an OS-assigned port if taken.
-	return new Promise((res, rej) => {
+	return new Promise((resolve, reject) => {
 		const probe = net.createServer();
-		probe.once("error", () => {
-			const s = net.createServer();
-			s.listen(0, "127.0.0.1", () => {
-				const p = s.address().port;
-				s.close(() => res(p));
-			});
-		});
-		probe.listen(8799, "127.0.0.1", () => {
-			probe.close(() => res(8799));
+		probe.once("error", reject);
+		probe.listen(0, "127.0.0.1", () => {
+			const port = probe.address().port;
+			probe.close(() => resolve(port));
 		});
 	});
 }
@@ -54,17 +48,22 @@ export async function startServer(port, env = {}) {
 		mountsPath,
 	], { env: { ...process.env, ...env } });
 	let ready = false;
+	let listeningPort = port;
 	const stdout = [];
 	child.stdout.on("data", (d) => {
 		stdout.push(String(d));
-		if (String(d).includes("listening")) ready = true;
+		const match = stdout.join("").match(/listening on http:\/\/127\.0\.0\.1:(\d+)/);
+		if (match) {
+			listeningPort = Number(match[1]);
+			ready = true;
+		}
 	});
 	child.stderr.on("data", (d) => process.stderr.write(`[server] ${d}`));
 	for (let i = 0; i < 100 && !ready; i++) {
 		await new Promise((r) => setTimeout(r, 50));
 	}
 	if (!ready) throw new Error(`server did not start: ${stdout.join("")}`);
-	return { child, dir, replyPath, captureDir, mistralBaseUrl: `http://127.0.0.1:${port}/w08-mistral`, stop: () => killTree(child) };
+	return { child, dir, replyPath, captureDir, port: listeningPort, mistralBaseUrl: `http://127.0.0.1:${listeningPort}/w08-mistral`, stop: () => killTree(child) };
 }
 
 function killTree(child) {
@@ -98,14 +97,14 @@ const minimalReply = {
 };
 
 // Clear capture dir, run fn, return the single new capture record.
-export async function withCapture(server, fn) {
+export async function withCapture(server, fn, expectedCount = 1) {
 	for (const f of readdirSync(server.captureDir)) rmSync(join(server.captureDir, f));
 	const value = await fn();
 	const files = readdirSync(server.captureDir).filter((f) => f.startsWith("req-"));
-	if (files.length !== 1) {
-		throw new Error(`expected exactly 1 capture file, got ${files.length}: ${files.join(",")}${value?.errorMessage ? `; SDK: ${value.errorMessage}` : ""}`);
+	if (files.length !== expectedCount) {
+		throw new Error(`expected exactly ${expectedCount} capture file, got ${files.length}: ${files.join(",")}${value?.errorMessage ? `; SDK: ${value.errorMessage}` : ""}`);
 	}
-	return { record: JSON.parse(readFileSync(join(server.captureDir, files[0]), "utf8")), value };
+	return { record: files.length === 1 ? JSON.parse(readFileSync(join(server.captureDir, files[0]), "utf8")) : undefined, value };
 }
 
 const JSON_SIGNATURE_APIS = new Set(["openai-completions", "openai-responses", "azure-openai-responses", "openai-codex-responses"]);

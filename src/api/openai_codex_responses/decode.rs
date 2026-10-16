@@ -15,21 +15,14 @@ const JWT_CLAIM_PATH: &str = "https://api.openai.com/auth";
 /// top-level `instructions` field (includeSystemPrompt: false,
 /// openai-codex-responses.ts:544) instead of an input item.
 pub fn decode_request(body: &str, headers: &[(String, String)]) -> Result<(UnifiedRequest, RequestInfo), String> {
-	let (mut unified, mut info) = decode_responses_request(body, headers)?;
-	if let Some(instructions) = instructions_of(body) {
-		apply_instructions(&mut unified, &instructions);
+	let parsed = super::parse_request::parse_request(body)?;
+	let (mut unified, mut info) = decode_responses_request(&parsed.to_string(), headers)?;
+	if let Some(instructions) = parsed.get("instructions").and_then(Value::as_str).filter(|text| !text.is_empty()) {
+		apply_instructions(&mut unified, instructions);
 	}
 	info.api = API.to_string();
 	retag(&mut unified);
 	Ok((unified, info))
-}
-
-/// pi-ai always sends a non-empty `instructions` (defaults to
-/// "You are a helpful assistant.", openai-codex-responses.ts:553-558).
-fn instructions_of(body: &str) -> Option<String> {
-	let parsed: Value = serde_json::from_str(body).ok()?;
-	let text = parsed.get("instructions")?.as_str()?;
-	(!text.is_empty()).then(|| text.to_string())
 }
 
 fn apply_instructions(unified: &mut UnifiedRequest, instructions: &str) {

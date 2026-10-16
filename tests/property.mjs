@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { referenceRoot } from "./pi-ai-reference.mjs";
 import { readFileSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { freePort, startServer, deepDiff, repoRoot, serverBin } from "./harness.mjs";
@@ -26,14 +27,16 @@ const protocols = wanted.length ? wanted.map((name) => {
 const inputHashes = () => Object.fromEntries(readdirSync(new URL("./", import.meta.url)).filter((name) => name.endsWith(".mjs")).map((name) =>
 	[name, createHash("sha256").update(readFileSync(new URL(name, import.meta.url))).digest("hex")]));
 const environmentHashes = () => {
-	const baseline = JSON.parse(readFileSync(new URL("./property-baseline.json", import.meta.url)));
-	const baselinePaths = Object.keys(baseline.files).map((path) => path.replace("<repo>", repoRoot).replace("<pi-mono>", resolve(repoRoot, "../pi-mono")));
-	const paths = [...baselinePaths.filter((path) => path.startsWith(`${repoRoot}/src/`) || path.includes("/pi-mono/packages/ai/src/") || path.endsWith("/irreversibility-atlas.md") || path.includes("/mock-llm-server/api/")), serverBin];
+	const sourceFiles = (dir) => readdirSync(dir, { recursive: true, withFileTypes: true })
+		.filter((entry) => entry.isFile()).map((entry) => resolve(entry.parentPath, entry.name)).sort();
+	const docs = resolve(repoRoot, "docs/design/mock-llm-server");
+	const paths = [...sourceFiles(resolve(repoRoot, "src")), ...sourceFiles(resolve(referenceRoot, "packages/ai/src")),
+		...sourceFiles(resolve(docs, "api")), resolve(docs, "irreversibility-atlas.md"), serverBin];
 	return Object.fromEntries(paths.map((path) => [path, createHash("sha256").update(readFileSync(path)).digest("hex")]));
 };
 const state = { startedAt: new Date().toISOString(), inputHashes: inputHashes(), environmentHashes: environmentHashes(), status: "running", results: [], notes: [
-	"本轮按 owner 裁决修复统一 Codex 编码出口、P1 合成期待及定义域；原24条反例保存在 property-p1-counterexamples.json。TS 权威源码只读，完整哈希校验见 f4-p1-readonly-hashes.json。",
-	"工作区没有 .git（git status --short: exit 128）；未执行 git add/commit，但无法独立确认 index/no-staged-files。",
+	"官方 submodule 参照源码只读；环境哈希枚举当前实际源码，不以旧 fork 的历史路径清单作为运行前提。原24条反例保存在 property-p1-counterexamples.json。",
+	"运行证据写入 target/test-artifacts；内容不相等、定义域拒绝和异常均保留为 finding，不计通过。",
 	"W-07 Bedrock/Mistral/Codex 专项不属本轮四根；冻结演进作为边界保留。输入域拒绝同样计入失败。",
 	"首轮未加 Rust 无标签块→TS 判别标签桥，结果已保留 property-first-run-results.json；该轮无效，不混入最终通过率。桥仅添加 type，不改 payload 值/身份。",
 	"P1 统一比较 Q_p(B(first)) 与 K_p(B(first))；rawIdempotent/rawDiffs 保留字面不动点反例。定义域拒绝仍为 finding，不计通过。P4 未改变。",

@@ -3,9 +3,10 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"duality": "node duality.mjs"
+		"duality": "node duality.mjs",
+		"test": "node run-suites.mjs"
 	},
 	"dependencies": {
-		"@earendil-works/pi-ai": "file:../pi-mono/packages/ai"
+		"@earendil-works/pi-ai": "file:../vendor/pi-mono/packages/ai"
 	}
 }

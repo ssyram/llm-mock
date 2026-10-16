@@ -2,6 +2,65 @@
 
 > 发布版脱敏说明：机器路径、私有 provider、会话/调用标识及采集时间已替换为占位或合成值；保留技术形态与历史统计，不作为逐字原始转录。
 
+## 如何继续找实验用例（原方法与离线复用）
+
+### 来源与现有文档判断
+
+原构建 session 为 `01a139a8-b5d1-7662-8f93-ad9dbbc5f7d7`，header 时间 `2026-10-14T09:05:20.337Z`；本地定位：`<pi-sessions>/<project-bucket>/2026-10-14T09-05-20-337Z_01a139a8-b5d1-7662-8f93-ad9dbbc5f7d7.jsonl`。以下是 JSONL 物理行与 entry ID，仅引用方法，不公开原对话正文：
+
+| 定位 | 方法依据 |
+| --- | --- |
+| L12 `16085e00` | 原始 Mock 架构委托，确认这是构建本项目的 session |
+| L250 `a64c66c1` | 用户要求真实 Pi session 单挂载验证采集扩展 |
+| L357 `030f2d00`；L358 `55e35bb4` | 用户纠正“等对应 provider 才能采某种协议语料”：统一 Message 可跨 API 再编码 |
+| L368 `a49b2979` | 用户要求实际 request/reply、多模型 thinking 来源；同时提出直接 fuzzing 构造 Message |
+| L446 `d188a0d2` | 用户再次概括：从可用模型拿 Message 语料，再全面测试各 pi-ai API |
+| L453 `eacc8ab0`；L711 `6c3c4c00` | 实际采用的扩充维度：可用模型 × 工具/推理；长 thinking、多工具、isError、中英混合、代码生成 |
+
+方法主体已分别存在于本文的扩展/存储契约、[batch 3](corpus-batch3.md)、[batch 4](corpus-batch4.md)、[fuzz](fuzz.md) 和 [fuzz-expand](fuzz-expand.md)。教程讲 Mock 端到端运行，不是新语料发现清单。原缺项是这些步骤的来源链、离线找回与安全交付步骤；本节补足，不另建同义方法文档，也不把下面的安全流程说成原用户逐字指令。
+
+### 可操作步骤
+
+1. **先选真实来源，再按形状挑选。** 已授权本地 `.tmp-corpus-*/real-session/.pi/mock-corpus/capture-*.jsonl` 优先；每行取 `message`。从 batch 表按场次编号查找目录，只汇总 role、content.type、stopReason、isError、签名载体与工具数，不打印原文。缺捕获时，可只读本项目相关原生 Pi session 的 `type=message` 条目；这叫历史转录提取，不冒充扩展捕获或新模型请求。
+2. **保留序列与来源差别。** extension JSONL 保留 `capturedAt` 包装；原生 session 提取只保留 `message`，不伪造 system 或 capturedAt。沿 `parentId` 验证选中消息同链，跳过非 Message 的 custom 元数据。优先完整工具往返；若只是连续片段，标明没有开场/收尾，不能自称完整请求上下文。不要拼接分支、补写模型答案或漏配工具结果。
+3. **按原先维度扩充，而非为每个协议重新付费。** 对比 `tests/corpus.mjs` 与现有 fixtures，挑 thinking 在工具前/后、混合 text/thinking/toolCall、多轮异构工具、工具错误、provider 错误等差异。历史批次已记录但未分发的形状，应称“新增可交付样本”，不能称首次发现。图片/音频等没有真实来源时标缺口；按原建议构造的 fuzz 输入必须独立标成合成，不能算真实捕获。
+4. **先脱敏，再落交付目录。** 原始文件只读；自由正文全部替换，而非只靠密钥正则。provider/model、路径/命令、账号、URL、调用与响应标识、时间及签名载荷一并替换；相同工具 ID 保持同一映射。保留 role/type、字段/数组形状、工具名和参数键、块顺序、stopReason/isError、错误分类；签名 JSON 仍是相同结构的 JSON 字符串，但不保留真实加密载荷。不要 `git add -f` 私有原始捕获。
+5. **素材验证与协议验证分开。** 逐行解析、形状对比、配对、脱敏白名单、输出哈希与可重复导出是素材验证。以后若接入对偶矩阵，仍须用锁定适配器分别验证 request/reply；同一 Message 能再编码不保证跨 API 签名有效。不得为了语料让 canonical/失败期待变绿。
+
+如未来另获真实模型调用授权，继续使用本文加载方式及 batch 3/4 的短会话命令，先查可用模型/认证，分别采工具与推理形态；凭据不 ready 则记录并跳过。**本次仅离线复用，无收费模型请求、认证读取、外部账号或全局配置改动。** 已采素材也不代表原生目标协议的 wire 捕获。
+
+### 本次新增脱敏材料与直接验证
+
+目录：`tests/fixtures/corpus-discovery/`，共 **5 个 JSONL、25 条 Message、9 组完整工具配对**，另有 `manifest.json` 记录匿名批次位置/原 session 行号及交付文件 SHA-256。这些是**真实历史结构＋合成替换正文**，不是逐字原始捕获，也不是重新采样。
+
+| 文件 | 来源 | 行数 | 相对现有交付的增量 |
+| --- | --- | ---: | --- |
+| `post-tool-thinking.jsonl` | batch 3 场次 5 | 5 | 工具成功后收尾包含 thinking＋text；历史已记载，现成为公开可解析样本 |
+| `thinking-tool-success.jsonl` | batch 3 场次 9 | 5 | thinking＋toolCall 后接成功 toolResult，与 batch 4 的 thinking＋工具错误形成素材区分 |
+| `provider-model-not-found.jsonl` | batch 3 场次 11 | 3 | HTTP 404 / model_not_found，空 content 的 error assistant；不当成成功回答 |
+| `provider-thinking-rejected.jsonl` | batch 3 场次 13 | 3 | HTTP 400 / 1210，thinking 级别被拒；原失败保留，不补写成功结果 |
+| `native-mixed-tool-rounds.jsonl` | 原 session L25–29、L33–36 | 9 | 连续两轮 thinking＋text＋3/4 个混合 bash/read，含 2 个 isError=true、5 个成功结果，保留 toolResult.details、JSON thinkingSignature/textSignature；比 batch 4 单轮两个 read 增加异构参数、混合成功/失败和连续工具轮次 |
+
+原生片段 assistant entry 分别为 `c3c87937`、`3aa9baa3`；L30–32 是 custom 元数据而非统一 Message。该片段起于 assistant、止于工具结果，所有工具配对完整，但没有 user/system/最终回答，**不应直接作为完整对话或完整 request case**。原生 session 格式按实际保留，不声称这些消息由捕获扩展产生。
+
+本次只新增独立素材，不修改 `tests/corpus.mjs` 的 18 场私有加载、对偶矩阵或其 4 项保留拒绝。batch 3 的这四场此前未编入该加载清单；“新增”指可分发素材与组合，不声称旧批次没见过这些形状。官方参照仍为 `vendor/pi-mono` v1.2.0 / `06a466935536f8c9bcacb2d5efc0fc021be1bdff`；下文历史采集版本记录原样保留。
+
+在仓库根目录执行：
+
+```sh
+# 只读私有源并重现已脱敏内容；没有这些本地私有源的 clone 不跑这条
+python3 scripts/export-corpus-materials.py --check
+# 首次授权本地导出使用同一脚本、不传 --check；脚本从不输出原文
+# 公开文件的解析、哈希、工具配对、具体形状及脱敏白名单测试，无私有源也可跑
+node --test tests/corpus-materials.test.mjs tests/corpus.test.mjs
+```
+
+本次上述检查实际通过：`CHECK: 5 sanitized excerpts, 25 messages; source shapes match`；Node 共 9 tests / 9 pass / 0 fail（新增素材 6 项＋既有加载 3 项）。这些结果仅验证素材，不是对偶矩阵或协议正确性结果。
+
+加载某份素材可直接使用 `readFileSync(file, "utf8").trimEnd().split("\n").map(line => JSON.parse(line).message)`；manifest 的 source.kind 区分两种包装。导出脚本只匹配上述场次及固定原 session，不遍历导出所有历史，未知结构/枚举立即停止；`--check` 不写任何文件，并逐份比较脱敏字节与源/产物 JSON 形状。无需安装依赖、启动服务或运行付费模型。
+
+脱敏保留字段存在性、JSON 值类型、数组长度、消息/块/工具顺序、工具参数键、ID 等价关系、时间大小关系、签名 JSON 载体形状及错误分类；普通数值/usage/cost 置零，时间映射为合成递增毫秒，所有非空自由字符串改为稳定编号（空串/纯空白保留）。因此损失原文语言/长度/推理含义、真实路径/命令、真实身份/时间/用量/费用和签名有效性，不能据此重现真实工具执行、账单或密码学校验，也不能把素材齐全当成协议正确证明。manifest 只保留用户要求的原方法 session 定位标识，不分发各捕获的私有 session UUID 或原始文件哈希。
+
 ## 捕获边界与 API 依据
 
 `extensions/llm-corpus-capture.ts` 是 Pi 扩展，默认导出接收 `ExtensionAPI` 的工厂，通过 `pi.on("message_end", ...)` 观察最终化的统一 Message。仅接受 pi-ai 的 `system`、`user`、`assistant`、`toolResult` 四种 role，不采集 Pi 专用的 custom/bash/compaction 包装消息。

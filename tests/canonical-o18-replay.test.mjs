@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
+import { artifactPath } from "./test-artifacts.mjs";
 import { startServer, freePort } from "./harness.mjs";
 import { replyDirection } from "./matrix-lib.mjs";
 import { makeModel } from "./models-shared.mjs";
@@ -19,7 +20,7 @@ test("O18: original 18 corpus replies pass locked Responses/Azure parsers with d
 	const server = await startServer(port);
 	assert.equal(replies.length, 9);
 	const results = [];
-	const path = new URL("./canonical-o18-results.json", import.meta.url);
+	const path = artifactPath("canonical-o18-results.json");
 	const startedAt = new Date().toISOString();
 	try {
 		for (const api of ["openai-responses", "azure-openai-responses"]) {
@@ -54,7 +55,7 @@ test("encode shared projection reaches nine routable protocol streams including 
 				] } }]);
 			}
 		}
-		writeFileSync(new URL("./canonical-o18-wire-results.json", import.meta.url), JSON.stringify({ results }, null, 2));
+		writeFileSync(artifactPath("canonical-o18-wire-results.json"), JSON.stringify({ results }, null, 2));
 		assert.deepEqual(results.filter((result) => !result.ok).map(({ api, name, diffs }) => ({ api, name, diffs })), []);
 	} finally { await server.stop(); }
 });
