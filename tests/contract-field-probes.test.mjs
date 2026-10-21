@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { PROVIDER_CONTRACTS, providerContract } from "./provider-contracts.mjs";
+import { protocolSelection } from "./protocol-prerequisites.mjs";
+import { PROVIDER_CONTRACTS as ALL_CONTRACTS, providerContract } from "./provider-contracts.mjs";
 import { evaluate } from "./contracts/behavior.ts";
 import { makeModel, streamOptions } from "./models-shared.mjs";
 import { startServer, withCapture, deepDiff } from "./harness.mjs";
@@ -10,7 +11,7 @@ import { canonicalReply, compareReply } from "./canonical-reply.mjs";
 import { captureWireReply } from "./capture-wire-reply.mjs";
 import { replyCases } from "./corpus.mjs";
 
-export const TEST_DEPENDENCIES = ["zstd"];
+const { available: PROVIDER_CONTRACTS } = protocolSelection(ALL_CONTRACTS);
 
 async function observe(contract, server, timestamp, maxTokens, overrides = {}) {
 	const model = { ...makeModel(contract.api, server.port), ...overrides };
@@ -24,7 +25,7 @@ async function observe(contract, server, timestamp, maxTokens, overrides = {}) {
 	return { wire, request: cap.record.request, model, context, options };
 }
 
-test("timestamp pairs independently verify preserved versus absent wire information for all ten providers", async () => {
+test("timestamp pairs independently verify preserved versus absent wire information for all available providers", async () => {
 	const server = await startServer(0);
 	try {
 		for (const contract of PROVIDER_CONTRACTS) {

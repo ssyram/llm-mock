@@ -32,5 +32,9 @@ export function compareReply(actual, expected, deepDiff, started, ended) {
 	}
 	if (!Number.isFinite(actual.timestamp) || actual.timestamp < started || actual.timestamp > ended) diffs.push("$.timestamp: outside client request clock interval");
 	if (actual.durationMs !== undefined && (!Number.isInteger(actual.durationMs) || actual.durationMs < 0)) diffs.push("$.durationMs: invalid local duration");
-	return deepDiff(comparableActual, comparableExpected, ["timestamp", "durationMs"], "$", diffs);
+	for (const value of [comparableActual, comparableExpected]) {
+		delete value.timestamp;
+		delete value.durationMs;
+	}
+	return deepDiff(comparableActual, comparableExpected, [], "$", diffs);
 }

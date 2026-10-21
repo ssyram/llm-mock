@@ -94,6 +94,7 @@ pub(super) fn decode_user(
 					None => Vec::new(),
 				};
 				out.push(Message::ToolResult(ToolResultMessage {
+					record: Default::default(),
 					tool_call_id: tool_use_id.clone(),
 					tool_name,
 					content,
@@ -164,6 +165,7 @@ pub(super) fn decode_assistant(
 		}
 	}
 	Ok(AssistantMessage {
+		record: Default::default(),
 		content,
 		api: "anthropic-messages".to_owned(),
 		provider: "anthropic".to_owned(),

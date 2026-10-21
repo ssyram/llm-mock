@@ -78,6 +78,7 @@ pub fn decode_request(body: &Value, headers: &WireHeaders) -> Result<Decoded, St
 			.map(str::to_owned)
 	});
 	let options = DecodedOptions {
+		cache_retention: None,
 		max_tokens: Some(wire.max_tokens),
 		temperature: wire.temperature,
 		session_id: session_header,

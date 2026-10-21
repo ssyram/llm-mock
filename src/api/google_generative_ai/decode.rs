@@ -1,13 +1,14 @@
 use serde_json::Value;
 
 use crate::model::{
-    AssistantMessage, ContentBlock, DecodedOptions, ImageContent, Message, RequestInfo,
+    AssistantMessage, ContentBlock, ImageContent, Message, RequestInfo,
     StopReason, SystemContent, SystemMessage, TextContent, ThinkingContent, Tool, ToolCall,
     ToolResultMessage, TranscriptContext, UnifiedRequest, Usage, UserBlock, UserContent,
     UserMessage,
 };
 
 use super::vendor::{FunctionResponse, GenerateContentRequest, Part, SystemInstruction, ToolSet};
+use super::decode_options::decode_options;
 
 pub const API: &str = "google-generative-ai";
 
@@ -94,6 +95,7 @@ fn decode_content(role: &str, parts: &[Part], messages: &mut Vec<Message>) {
             let content: Vec<ContentBlock> = parts.iter().filter_map(model_block).collect();
             if !content.is_empty() {
                 messages.push(Message::Assistant(AssistantMessage {
+                    record: Default::default(),
                     content,
                     api: API.to_string(), provider: String::new(), model: String::new(),
                     response_model: None, response_id: None, provider_thinking_level: None,
@@ -179,6 +181,7 @@ fn decode_function_response(fr: &FunctionResponse) -> Message {
         }
     }
     Message::ToolResult(ToolResultMessage {
+        record: Default::default(),
         tool_call_id: fr.id.clone().unwrap_or_else(|| fr.name.clone()),
         tool_name: fr.name.clone(),
         content,
@@ -186,28 +189,4 @@ fn decode_function_response(fr: &FunctionResponse) -> Message {
         timestamp: 0,
         duration_ms: None,
     })
-}
-
-fn decode_options(wire: &GenerateContentRequest) -> DecodedOptions {
-    let config = wire.generation_config.clone().unwrap_or_default();
-    DecodedOptions {
-        max_tokens: config.max_output_tokens,
-        temperature: config.temperature,
-        session_id: None,
-        tool_choice: wire
-            .tool_config
-            .as_ref()
-            .and_then(|tc| tc.function_calling_config.as_ref())
-            .and_then(|c| c.mode.clone())
-            .map(|m| Value::String(m.to_lowercase())),
-        reasoning: config.thinking_config.and_then(|tc| {
-            if let Some(level) = tc.thinking_level {
-                Some(level.to_lowercase())
-            } else if tc.thinking_budget == Some(0) {
-                Some("off".to_string())
-            } else {
-                tc.thinking_budget.map(|b| format!("budget:{b}"))
-            }
-        }),
-    }
 }

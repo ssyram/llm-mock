@@ -27,10 +27,11 @@ export async function startServer(port, env = {}, replySource) {
 	const replyPath = join(dir, "reply.json");
 	writeFileSync(replyPath, JSON.stringify(minimalReply));
 	const registryPath = join(dir, "registry.json");
+	const source = typeof replySource === "function" ? replySource(dir) : replySource ?? { type: "file", path: replyPath };
 	writeFileSync(
 		registryPath,
 		JSON.stringify({
-			entries: ["duality", streamOptions("openai-codex-responses").apiKey].map((keyId) => ({ keyId, matcher: { type: "any" }, reply: replySource ?? { type: "file", path: replyPath } })),
+			entries: ["duality", streamOptions("openai-codex-responses").apiKey].map((keyId) => ({ keyId, matcher: { type: "any" }, reply: source })),
 		}),
 	);
 	const mountsPath = join(dir, "mounts.json");
@@ -164,6 +165,9 @@ export function deepDiff(actual, expected, ignores = [], path = "$", out = [], p
 		}
 		return out;
 	}
+	if (/^\$\.context\.messages\[\d+\]\.sections$/.test(path) && JSON.stringify(Object.keys(actual)) !== JSON.stringify(Object.keys(expected))) {
+		out.push(`${path}: ordered section keys differ: expected ${JSON.stringify(Object.keys(expected))}, got ${JSON.stringify(Object.keys(actual))}`);
+	}
 	const keys = new Set([...Object.keys(actual), ...Object.keys(expected)]);
 	for (const k of keys) {
 		const p = `${path}.${k}`;
@@ -172,7 +176,7 @@ export function deepDiff(actual, expected, ignores = [], path = "$", out = [], p
 		const eV = expected[k];
 		if (aV === undefined && eV === undefined) continue;
 		// Reasoning JSON carriers ignore key order; opaque and v1 text signatures do not.
-		if (typeof aV === "string" && typeof eV === "string" && ((k === "thinkingSignature" && JSON_SIGNATURE_APIS.has(protocol)) || (p === "$.options.reasoning" && protocol === "bedrock-converse-stream"))) {
+		if (typeof aV === "string" && typeof eV === "string" && ((/^\$(?:\.context\.messages\[\d+\])?\.content\[\d+\]\.thinkingSignature$/.test(p) && JSON_SIGNATURE_APIS.has(protocol)) || (p === "$.options.reasoning" && protocol === "bedrock-converse-stream"))) {
 			const aN = tryJsonNormalize(aV);
 			const eN = tryJsonNormalize(eV);
 			if (aN !== undefined && eN !== undefined) {

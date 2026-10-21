@@ -20,20 +20,6 @@ const zeroUsage = () => ({
 	cost: { ...ZERO_COST },
 });
 
-// Rust serde_json::to_string(Value) without preserve_order: BTreeMap → alphabetical keys, compact.
-function rustJsonString(value) {
-	return JSON.stringify(sortKeysAlpha(value));
-}
-function sortKeysAlpha(v) {
-	if (Array.isArray(v)) return v.map(sortKeysAlpha);
-	if (v && typeof v === "object") {
-		const out = {};
-		for (const k of Object.keys(v).sort()) out[k] = sortKeysAlpha(v[k]);
-		return out;
-	}
-	return v;
-}
-
 export function canonicalOres(context, model, options) {
 	const transcript = piAi.resolveTranscript(piAi.normalizeContext(context), false);
 	const tools = piAi.resolveTranscriptTools(transcript.messages, false);
@@ -151,7 +137,7 @@ export function canonicalOres(context, model, options) {
 			pending.push({
 				type: "thinking",
 				thinking: summary.length > 0 ? summary : content,
-				thinkingSignature: rustJsonString(item),
+				thinkingSignature: JSON.stringify(item),
 			});
 		} else if (item.type === "function_call") {
 			const fullId = item.id !== undefined ? `${item.call_id}|${item.id}` : item.call_id;

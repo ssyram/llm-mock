@@ -36,6 +36,7 @@ fn decodes_converse_request_and_sigv4_key_id() {
 
 pub(super) fn sample_message() -> AssistantMessage {
     AssistantMessage {
+        record: Default::default(),
         content: vec![ContentBlock::Text(TextContent {
             text: "hello".into(),
             text_signature: None,

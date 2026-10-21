@@ -12,9 +12,10 @@ const canonicalMustNotRun = () => { throw new Error("rejected input has no decod
 test("real client header refusals are asserted and counted separately from duality matches", async () => {
 	const server = await startServer(0);
 	try {
-		for (const api of ["openai-responses", "openai-codex-responses", "mistral-conversations"]) {
+		for (const api of ["openai-completions", "openai-responses", "openai-codex-responses", "mistral-conversations", "anthropic-messages"]) {
 			const rows = [];
-			await requestDirection(api, makeModel(api, server.port), server, [invalid], canonicalMustNotRun, rows);
+			const model = { ...makeModel(api, server.port), compat: { sendSessionAffinityHeaders: true } };
+			await requestDirection(api, model, server, [invalid], canonicalMustNotRun, rows);
 			assert.equal(rows.length, 1);
 			assert.equal(rows[0].ok, true, JSON.stringify(rows[0].diffs));
 			assert.equal(rows[0].outcome, "expected-rejection");

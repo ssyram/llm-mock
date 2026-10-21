@@ -88,6 +88,7 @@ pub fn decode_messages(body: &Value, model: &str) -> Result<Vec<Message>, String
                 }
             }
             "tool" => output.push(Message::ToolResult(ToolResultMessage {
+                record: Default::default(),
                 tool_call_id: msg
                     .get("tool_call_id")
                     .and_then(Value::as_str)

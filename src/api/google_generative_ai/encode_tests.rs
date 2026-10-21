@@ -9,6 +9,7 @@ use super::encode::{encode_error, encode_sse};
 
 fn assistant(content: Vec<ContentBlock>, model: &str, stop: StopReason) -> AssistantMessage {
     AssistantMessage {
+        record: Default::default(),
         content,
         api: "google-generative-ai".to_string(),
         provider: "google".to_string(),

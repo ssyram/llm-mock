@@ -3,6 +3,8 @@
 > `/workflow` §4.2 + `/qpdi` Q/D 结构。上游：`architecture.md`（M3 registry & matcher、I_2 注册入口、D3）。
 > 状态：mock-2 实现产出，与 `src/registry.rs` / `src/server.rs` 同步；curl 示例均经端到端 smoke 验证。
 
+本页旧 Q.I/Q.A/Q.E 标签及 M3/I_2/D3 引用保留历史 mock-2 的组织方式，不作为现行 QPDI 分类。现行问题意识见 [principles.md](principles.md)，根性质与组合设计见 [architecture.md](architecture.md)；历史行号和测试计数不自动代表当前覆盖。
+
 ## Task Overview
 
 把「注册入口」从启动时的静态 `registry.json` 扩展为运行时 HTTP admin 面：server 存活期间可注册/查询/删除 mock 条目，替代「仅启动时 registry.json」。四个协议路由的行为契约（恰一命中 / 404 / 409 / 401 / 协议内可见错误）**逐字不变**——`process` 仅把匹配结果从索引改为 snapshot，语义等价。

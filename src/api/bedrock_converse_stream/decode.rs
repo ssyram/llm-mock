@@ -28,6 +28,7 @@ pub fn decode_request(path: &str, body: &Value) -> Result<UnifiedRequest, String
         model,
         context: TranscriptContext { messages },
         options: DecodedOptions {
+            cache_retention: None,
             max_tokens: inference
                 .and_then(|v| v.get("maxTokens"))
                 .and_then(Value::as_u64),

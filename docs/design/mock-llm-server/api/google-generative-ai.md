@@ -2,16 +2,20 @@
 
 ## 1. 概览
 
-> 锁定参照：pi-mono `packages/ai` @1.2.0（commit `371cc25`），SDK `@google/genai` 2.21.0（pi-mono `node_modules/@google/genai/dist/index.mjs`，下称 `sdk`）。
+> 现行锁定参照：官方 `vendor/pi-mono`，pi-ai v1.2.0 commit `06a466935536f8c9bcacb2d5efc0fc021be1bdff`。SDK `@google/genai` 2.21.0 的Node入口为 `node_modules/@google/genai/dist/node/index.mjs`；源码与实际安装/构建树由referenceState校验。旧fork `371cc25` 的观察只属于历史快照，不是当前参照。
 > 证据缩写：`gai` = `pi-mono/packages/ai/src/api/google-generative-ai.ts`；`shared` = `.../api/google-shared.ts`；`tm` = `.../api/transform-messages.ts`；`tr` = `.../utils/transcript.ts`；`cs` = `.../api/constrained-sampling.ts`。
 
 
 Q＝unified→pi convert→wire→mock decode；R＝unified→mock encode→wire→pi parser。E＝精确 JSON 值；D＝明确的确定性投影；L＝当前 wire 映射未发源信息；P＝pi 注入（身份、时钟、生成 ID、成本）；T＝内容解析前 transport 失败。wire 已发未读是 D 实现缺口；输入契约拒绝不是 T。默认未改写 onPayload；Gemini 与 Vertex 的独立 parser 条件分别按源码核对，不用 retag 测试冒充全部证明。别名 gai/shared/tm/tr/cs 对应上列文件，编号表兼用 GG/GS/TM/TR/CS 同义别名。
 
+### 当前源码锚点与历史行号
+
+当前规则锚定官方 `google-generative-ai.ts` 的 `stream`、`createClient`、`buildParams`、`streamSimple/getGoogleBudget`，以及 `google-shared.ts` 的 `convertMessages`、`requiresToolCallId/getGeminiMajorVersion`、`convertTools/resolveGoogleFunctionCallingMode`、`usesGoogleThinkingLevel/getDisabledGoogleThinkingConfig`、`retainThoughtSignature/mapStopReason`。本轮已按这些固定函数承接原生thinking、严格工具模式、API/model身份、签名、ID与停止语义。下列旧数字行号保留为历史索引，不据其声称已逐行迁移SDK生成代码；定位当前定义以具名函数和固定树为准，实际wire还由本地SDK回归观察。
+
 ### Wire 传输形态（SDK 层核实）
 
 
-- 请求：`POST {baseUrl}/v1beta/models/{modelId}:streamGenerateContent?alt=sse`，默认 `baseUrl = https://generativelanguage.googleapis.com/`（`sdk:8150`、`sdk:8014`、`sdk:22040`、`sdk:3217` tModel 给非 `models/`、`tunedModels/` 前缀 id 补 `models/`）。非流式 `:generateContent` 同理（`sdk:21960` 附近）；pi-ai 只走流式（`gai:87` `generateContentStream`）。
+- 请求：`POST {model.baseUrl}/models/{modelId}:streamGenerateContent?alt=sse`，默认 `baseUrl = https://generativelanguage.googleapis.com/`（`sdk:8150`、`sdk:8014`、`sdk:22040`、`sdk:3217` tModel 给非 `models/`、`tunedModels/` 前缀 id 补 `models/`）。非流式 `:generateContent` 同理（`sdk:21960` 附近）；pi-ai 只走流式（`gai:87` `generateContentStream`）。
 - 认证头：`x-goog-api-key: <apiKey>`（`sdk:10064`、`sdk:25688`）。无 Bearer（API key 模式）。
 - 请求体 = mldev 形态：`GenerateContentParameters.config` 被 SDK 拆分——`systemInstruction`、`tools`、`toolConfig`、`safetySettings` 提升到请求根，采样参数进 `generationConfig`（`sdk:18119` `generateContentParametersToMldev`、`sdk:17762` `generateContentConfigToMldev`）。`contents[].{role,parts}` 原样（`sdk:17053` `contentToMldev$1`）；part 仅复制已有字段，字段名不变（`sdk:19417` `partToMldev$1`）；`functionCall` 序列化为 `{args,id?,name}`（`sdk:17722`）。`config`（即 `generationConfig`）内 `thinkingConfig` 原样嵌入（`sdk:17900`）。
 - 回复：SSE。SDK 以 `\n\n`/`\r\r`/`\r\n\r\n` 分帧，仅取 `data:` 前缀事件，每个 data 载荷是一个完整 `GenerateContentResponse` JSON（`sdk:8371-8460` `processStreamResponse`）。无 `[DONE]` 哨兵；连接关闭即流结束。
@@ -19,7 +23,7 @@ Q＝unified→pi convert→wire→mock decode；R＝unified→mock encode→wire
 
 
 
-- **KeyID**：HTTP 头 `x-goog-api-key`（`sdk:10064,25688`）。缺失时 M1 层 401。
+- **KeyID**：HTTP 头 `x-goog-api-key`。legacy registry无KeyID返回401；命名/独立端口挂载的KeyID为可选脚本输入，不把legacy认证要求泄漏到挂载。
 - **session 信号**：无。pi-ai Google 适配器不读取/发送 `sessionId`（`gai` 全文无引用）；URL 查询仅有 `alt=sse`。`RequestInfo.session_signal = None`，`DecodedOptions.session_id = None`。
 
 
@@ -115,7 +119,7 @@ convert 管线 = `collapseSystemMessages` → `withoutInitialSystemMessage` → 
 4. **图像降级**：`model.input` 不含 image 时，user 内容与 toolResult 内容中的 image 以占位文本替换（`"(image omitted: model does not support images)"` / `"(tool image omitted: …)"`，连续图像折叠为一个）（`tm:12,35,44`）。
 5. **thinking 块**：同模型保留（含 `thought:true` part），`redacted` 标志不上 wire（丢弃）；空/纯空白 thinking 无签名时丢弃；跨模型非空 thinking → 纯 text part（`tm:104-118`；`shared:263-277`）。
 6. **text 块**：空/纯空白且无有效签名时丢弃；`thoughtSignature` 先受 TM 的 api/provider/model 三等门槛，再要求同 provider+model 且 base64 合法（长度 %4==0、字符集 `[A-Za-z0-9+/]+={0,2}`）时保留（`shared:143-162,243-253`）。
-7. **toolCall 块**：同模型 id 原样、跨模型先经 normalize（`[^a-zA-Z0-9_-]→"_"`、截 64）（`tm:131-141`；`shared:197-201`）；wire 上 `functionCall.id` 仅当 `requiresToolCallId(model)`（claude-\*、gpt-oss-\*、gemini 主版本 ≥3）才携带，否则整字段丢弃（`shared:165-178,279`）；跨模型 `thoughtSignature` 丢弃。
+7. **toolCall 块**：同模型 id 原样；仅requiresToolCallId为真时，跨模型先经 normalize（`[^a-zA-Z0-9_-]→"_"`、截 64）（`tm:131-141`；`shared:197-201`）；wire 上 `functionCall.id` 仅当 `requiresToolCallId(model)`（claude-\*、gpt-oss-\*、gemini 主版本 ≥3）才携带，否则整字段丢弃（`shared:165-178,279`）；跨模型 `thoughtSignature` 丢弃。
 8. **toolResult 合并/拆分**：连续 toolResult 合并为单个 `role:"user"` turn、每结果一个 `functionResponse` part（`shared:325-333`）；decode 侧逐 part 拆回独立 ToolResultMessage。无 id 模型的 functionResponse 不带 id，decode 以 `name` 回填 `tool_call_id`（同名多次调用不可区分——见 §5 限制）。
 9. **toolResult 内容形态**：文本 parts 以 `\n` 连接 → `response.output`（isError → `response.error`）；Gemini≥3 或非 Gemini 图像以 `functionResponse.parts[].inlineData` 嵌套；拼接文本非空时保留原文本，仅无文本而有图片才用 `"(see attached image)"`；Gemini<3 图像拆出为后续合成 user turn `[{text:"Tool result image:"},…inlineData]`（`shared:286-341`，`shared:180-189`）。
 10. **空 turn 删除**：user 空块数组、assistant 空块序列产生的空 parts turn 被跳过（`shared:231,282-284`）。
@@ -123,7 +127,7 @@ convert 管线 = `collapseSystemMessages` → `withoutInitialSystemMessage` → 
 12. **user 内容归一**：单 text part turn → canonical `UserContent::Text`；其余（多 part/含图）→ `Blocks`。
 13. **assistant 元数据归零**：wire 不携带 api/provider/model/usage/stopReason/timestamp——canonical assistant 固定 `api="google-generative-ai"`、`provider=""`、`model=""`、usage 全 0、`stopReason=stop`、timestamp 0、其余 optional 字段 None。
 14. **工具 schema**：mldev 走 `parametersJsonSchema`，schema 原样透传（不剥离 `$schema` 等 meta 键；Google 和 Vertex 均传 useParameters=false，只有未被这两家采用的 true 分支才剥 meta，`gai:395–397`、`api/google-vertex.ts:485–489`、`shared:380–396`）；仅当工具声明 `constrainedSampling(json_schema)` 且模型为 Gemini≥3 时套用 `makeStrictJsonSchema`（required=全部属性、additionalProperties=false、可空属性包 anyOf）（`cs:127,142,225`；`shared:388-395`）。
-15. **options**：仅 `streamSimple` 链路由 `buildBaseOptions` 对 `options.maxTokens ?? model.maxTokens` 执行 `clampMaxTokensToContext`，canonical 取 clamp 后值（`gai:305–321`；`api/simple-options.ts:18–20,35–46`）；原生 `stream` 对非 undefined 的显式 `maxTokens` 原值写入 `maxOutputTokens`，不执行该 context clamp，未指定则省略（`gai:379–384`）；与 G21 一致。`toolChoice` 优先级 none/any > strict 工具的 `VALIDATED` > auto（`shared:423-439`）；reasoning 级别按模型映射为 `thinkingLevel`（Gemini3 系/gemma4/gemini-*-latest）或 `thinkingBudget`（2.5 系预算表，未命中 -1）（`shared:48–110`；`gai:431-460`）。
+15. **options**：原生stream对非undefined的maxTokens/temperature直接发送；仅streamSimple先做上下文预算clamp并将reasoning level经模型映射转成native thinking。原生thinking要求model.reasoning；enabled时includeThoughts=true，显式level优于budget，未给二者则不产生可恢复reasoning值；budget=0→off，其余含合法动态-1→budget:n。显式关闭按getDisabledGoogleThinkingConfig的off/clamp规则，不能套用任意模型一律budget0。仅当前工具集合非空才发toolConfig：none/any优先，其余strict工具→VALIDATED，再是显式auto/未指定省略。Oracle由google-thinking.ts、google-tool-mode.ts和当前工具集合计算；真实native-options回归分别观察wire与decode。
 
 
 ### 第 4 节规则索引（G16–G26）
@@ -142,7 +146,9 @@ convert 管线 = `collapseSystemMessages` → `withoutInitialSystemMessage` → 
 | G25 / R ID/stop/error | responseId 取首 truthy；STOP→stop，有call升toolUse，无call的toolUse→stop；MAX_TOKENS→length。源error/aborted/pending/deferred仅选择raw或OTHER，不决定最终stop：raw=STOP/MAX_TOKENS同样可变成功/length。已枚举错误→error+Provider stopped with: native原因；未知值抛错，任意源errorMessage不往返。 | GG:110,224–228,272–297；GS:441–475；src/api/google_generative_ai/encode.rs:82–86 |
 | G26 / R rawStop | rawStopReason=wire finishReason；源raw仅在非成功encoder分支参与候选，stop/toolUse/length不使用源raw。raw与统一stop分别预测比较，不能因源error而假设wire错误原因。 | GG:224–228；src/api/google_generative_ai/encode.rs:82–86 |
 
-### 与现有 tests 的显式对账
+### 历史 tests 差异对账
+
+以下C09–C25保留冻结时的发现，不宣称其旧函数/行号或待修状态就是当前。现行入口在tests/contracts/，字段与流/工具证据见../duality-experiments.md；不将旧fork结果用于认证官方参照。
 
 | 报告ID / 测试位置 | 当前差异与正确规则 |
 |---|---|
@@ -162,7 +168,7 @@ convert 管线 = `collapseSystemMessages` → `withoutInitialSystemMessage` → 
 
 **有损点（canonical 吸收）**：① 无 id 模型的 toolCall id 以 name 回填，同名多次调用 id 重复；② toolResult 纯图像文本 `"(see attached image)"` / `"Tool result image:"` 标记串不可与真实用户文本区分；③ assistant 元数据（provider/model/usage/stopReason/timestamp）请求侧不上 wire，canonical 归零；④ sections 结构折叠为纯文本后不可恢复；⑤ `redacted` thinking 标志、`end_turn`、cost 无 wire 对应；⑥ stopReason=toolUse 但无 toolCall 块时编码为 STOP，客户端解析回 stop；⑦ usage cost 字段不编码；⑧ sanitizeSurrogates 已剔除的代理字符不可恢复。
 
-**假设**：pi-ai 适配器输出代表协议公共子集（架构 H1/A4）；mock 客户端不用自定义 fetch / baseUrl 重定向（`gai:78-80` 显式拒绝 custom fetch）；`alt=sse` 恒成立（SDK 硬编码，`sdk:22040`）。
+**前提与边界**：当前证据相对于固定pi-ai与声明协议域，不由此证明所有第三方SDK扩展。Google adapter拒绝不同于globalThis.fetch的自定义fetch；但明确支持model.baseUrl，createClient设apiVersion为空以避免重复追加版本路径，正是本地Mock接入方式。streamSimple与native stream的参数变换不能混用。
 
 
 ## 6. 覆盖与 fixture 索引
@@ -180,6 +186,6 @@ convert 管线 = `collapseSystemMessages` → `withoutInitialSystemMessage` → 
 
 锁定 `google-generative-ai.ts:232–241`（Vertex 同构 `google-vertex.ts:240–249`）明确赋值 `input = promptTokenCount - cachedContentTokenCount`、`cacheRead = cachedContentTokenCount || 0`、`cacheWrite = 0`。encoder 发 `prompt=input+read`，所以 providerFill 的 input 必须保持源 input，**不得再加 read**；read 本身可逆。cacheWrite 非零却解析为 0 是客户端固有不可逆，不发明写缓存 wire 字段。
 
-`tests/matrix-lib.mjs:fillGoogle` 声明 cacheWrite=0 而保留原 input/read。历史 corpus 的 117+704、2+1289 不能把 expected input 写为 821、1291。新增 `reply-nonzero-cache-usage` 保留非零输入 write=17，Google/Vertex 投影为 0，同时严格断言 input=11、read=13；不是删除非零缓存测试。
+当前 `tests/canonical-google-reply.mjs:fillGoogle` 声明 cacheWrite=0 而保留原 input/read。历史 corpus 的 117+704、2+1289 不能把 expected input 写为 821、1291。新增 `reply-nonzero-cache-usage` 保留非零输入 write=17，Google/Vertex 投影为 0，同时严格断言 input=11、read=13；不是删除非零缓存测试。
 
 `usage.cacheWrite1h` 无读取路径（gai:232–241；Vertex:240–249），canonical 删除该拆分字段；cacheWrite=0 与 cacheRead 可逆的边界保持。 新增十协议缓存夹具全部保留源 input=11/output=5/read=13/write=17/1h=7，严格验证各协议声明的投影。

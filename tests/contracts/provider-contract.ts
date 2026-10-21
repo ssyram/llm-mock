@@ -16,8 +16,8 @@ export abstract class ProviderContract {
 	constructor(api: string, request: RequestProjection, fill: ReplyFill, options: OptionDefinition) {
 		this.api = api; this.requestProjection = request; this.replyFill = fill; this.optionDefinitions = options;
 	}
-	options(model: Model, options: Options = {}): Record<string, unknown> {
-		return projectRequestOptions(this.optionDefinitions, model, options);
+	options(model: Model, options: Options = {}, tools: readonly unknown[] = []): Record<string, unknown> {
+		return projectRequestOptions(this.optionDefinitions, model, options, tools);
 	}
 	definition(direction: Direction, model: Model, options?: Options): Behavior {
 		if (model.api !== this.api) throw new Error(`contract/model API mismatch: ${this.api}/${model.api}`);
@@ -33,8 +33,9 @@ export abstract class ProviderContract {
 	}
 	behavior(direction: Direction, field: string, input: unknown, env: Environment): Behavior {
 		if (direction === "request" && optionFields.some((name) => name === field)) {
+			if (field === "toolChoice" && ["google-generative-ai", "google-vertex", "bedrock-converse-stream"].includes(this.api) && env.tools === undefined) throw new Error("toolChoice behavior requires the current tool collection");
 			const declaration = this.optionDefinitions[field as typeof optionFields[number]];
-			return typeof declaration === "function" ? declaration({ model: env.model, options: { ...env.options, [field]: input } }) : declaration;
+			return typeof declaration === "function" ? declaration({ model: env.model, tools: env.tools ?? [], options: { ...env.options, [field]: input } }) : declaration;
 		}
 		if (field === "timestamp") return direction === "reply" ? { kind: "inject", generator: "clock" }
 			: this.api === "pi-messages" ? { kind: "preserve" } : { kind: "transform", transform: { tag: "constant", value: 0 } };

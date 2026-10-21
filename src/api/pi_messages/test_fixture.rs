@@ -23,8 +23,9 @@ pub fn assistant(reason: StopReason) -> AssistantMessage {
 pub fn request() -> Value {
     let mut history = serde_json::to_value(assistant(StopReason::ToolUse)).unwrap();
     history["role"] = json!("assistant");
-    history["diagnostics"] = json!([{ "code": "runtime-only" }]);
-    history["deferred"] = json!({"id":"runtime-handle"});
+    history["diagnostics"] = json!([{ "type": "fixture", "timestamp": 100, "details": {"retained":true} }]);
+    history["deferred"] = json!({"id":"runtime-handle","provider":"mock","modelId":"test-model","api":"pi-messages"});
+    let usage = history["usage"].clone();
     json!({
         "model":"test-model",
         "context":{"messages":[
@@ -36,7 +37,7 @@ pub fn request() -> Value {
             history,
             {"role":"toolResult","toolCallId":"call-1","toolName":"read", "isError":false,
                 "content":[{"type":"text","text":"result"},{"type":"image","data":"YWJj","mimeType":"image/jpeg"}],
-                "timestamp":105,"durationMs":12,"details":{"record":true},"usage":{"ignored":true},"nestedCalls":{"calls":[]}}
+                "timestamp":105,"durationMs":12,"details":{"record":true},"usage":usage,"nestedCalls":{"calls":[],"complete":true}}
         ]},
         "options":{"maxTokens":128,"temperature":0.25,"reasoning":"high","sessionId":"session-1","toolChoice":"auto","cacheRetention":"long"}
     })

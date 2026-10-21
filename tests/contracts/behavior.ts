@@ -1,5 +1,5 @@
-export type Model = { api: string; id: string; provider: string; name?: string; reasoning?: boolean; maxTokens?: number; compat?: Record<string, unknown>; [key: string]: unknown };
-export type Options = { maxTokens?: number; temperature?: number; sessionId?: string; cacheRetention?: string; toolChoice?: unknown; reasoning?: unknown; thinkingEnabled?: boolean; [key: string]: unknown };
+export type Model = { api: string; id: string; provider: string; name?: string; reasoning?: boolean; maxTokens?: number; thinkingLevelMap?: Record<string, string | null>; samplingParams?: Record<string, unknown>; samplingParamsByThinkingLevel?: Record<string, Record<string, unknown>>; compat?: Record<string, unknown>; [key: string]: unknown };
+export type Options = { maxTokens?: number; temperature?: number; sessionId?: string; cacheRetention?: string; toolChoice?: unknown; reasoning?: unknown; thinkingEnabled?: boolean; thinkingBudgetTokens?: number; env?: Record<string, string | undefined>; effort?: string; reasoningEffort?: string; reasoningSummary?: string; samplingParams?: Record<string, unknown>; thinking?: { enabled: boolean; level?: string; budgetTokens?: number }; [key: string]: unknown };
 export type Transform =
 	| { tag: "constant"; value: unknown }
 	| { tag: "truthy" }
@@ -21,7 +21,7 @@ export const preserve: Behavior = { kind: "preserve" };
 export const drop = (reason: string): Behavior => ({ kind: "drop", reason });
 export const transform = (operation: Transform): Behavior => ({ kind: "transform", transform: operation });
 export type Direction = "request" | "reply";
-export type Environment = { model: Model; options?: Options; sourceModel?: string; toolName?: string; previousIds?: readonly string[] };
+export type Environment = { model: Model; options?: Options; sourceModel?: string; toolName?: string; previousIds?: readonly string[]; tools?: readonly unknown[] };
 
 export function evaluate(behavior: Behavior, value: unknown): unknown {
 	if (behavior.kind === "preserve") return structuredClone(value);

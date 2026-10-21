@@ -6,6 +6,7 @@ import { zstdCompressSync, zstdDecompressSync } from "node:zlib";
 import { ores, codex, mistral, piAi } from "./pi-ai-imports.mjs";
 import { makeModel, streamOptions } from "./models-shared.mjs";
 import { startServer, freePort } from "./harness.mjs";
+import { protocolSelection } from "./protocol-prerequisites.mjs";
 import { w06RequestCases } from "./w06-matrix-cases.mjs";
 
 const adapters = [
@@ -83,10 +84,11 @@ test("Codex original surrogate instructions reach HTTP as escaped JSON", async (
 		instructions: JSON.parse(sent.json).instructions }));
 });
 
-test("Codex instructions: identity and zstd normalize lone surrogates, preserve valid text", async (t) => {
+test("Codex instructions: identity and available zstd normalize lone surrogates, preserve valid text", async (t) => {
 	const server = await startServer(await freePort());
 	try {
-		for (const encoding of ["identity", "zstd"]) {
+		const { available } = protocolSelection([{ api: "openai-codex-responses" }]);
+		for (const encoding of ["identity", ...(available.length ? ["zstd"] : [])]) {
 			for (const [instructions, expected] of [["s\ud800x", "sx"], ["s\udc00x", "sx"], ["\ud800", "You are a helpful assistant."], ["s�x", "s�x"], ["s😀x", "s😀x"], ["s\\ud800x", "s\\ud800x"]]) {
 				const before = readdirSync(server.captureDir).filter((name) => name.startsWith("req-")).length;
 				const json = JSON.stringify({ model: "mock-gpt", instructions, input: [], stream: true })

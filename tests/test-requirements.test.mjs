@@ -28,5 +28,5 @@ test("transitive imports and reexports detect pi-ai without importing it", (t) =
 });
 test("cyclic dependencies terminate and preserve compression requirements", (t) => {
 	const dir = fixture(t, { "a.mjs": 'import "./b.mjs";', "b.mjs": 'import "./a.mjs";\nimport { zstdCompressSync } from "node:zlib";' });
-	assert.deepEqual([...testRequirements(join(dir, "a.mjs"))], ["zstd"]);
+	assert.deepEqual([...testRequirements(join(dir, "a.mjs"))], ["node-zstd"]);
 });

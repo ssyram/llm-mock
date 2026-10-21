@@ -1,4 +1,5 @@
 pub mod decode;
+mod decode_options;
 pub mod encode;
 pub mod vendor;
 

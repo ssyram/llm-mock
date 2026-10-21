@@ -5,6 +5,7 @@ use super::vendor::short_hash;
 
 fn assistant(content: Vec<ContentBlock>, stop: StopReason) -> AssistantMessage {
 	AssistantMessage {
+		record: Default::default(),
 		content,
 		api: "openai-responses".to_string(),
 		provider: "openai".to_string(),

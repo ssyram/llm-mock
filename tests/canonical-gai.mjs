@@ -29,7 +29,7 @@ export function canonicalGai(context, model, options) {
 	const conversation = piAi.withoutInitialSystemMessage(collapsed.messages);
 	const initialSystem = collapsed.messages.find((m) => m.role === "system");
 	const currentTools = piAi.getCurrentTools(collapsed.messages);
-	const transformed = tm.transformMessages(conversation, model, (id) => id.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64));
+	const transformed = tm.transformMessages(conversation, model, (id) => requiresGoogleToolId(model) ? id.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64) : id);
 
 	// --- wire contents (google-shared.ts convertMessages) ---
 	const contents = [];
@@ -71,7 +71,8 @@ export function canonicalGai(context, model, options) {
 			const images = msg.content.filter((b) => b.type === "image");
 			const text = sanitize(msg.content.filter((c) => c.type === "text").map((c) => c.text).join("\n"));
 			const value = text || (images.length ? "(see attached image)" : "");
-			const nestedImages = !model.id.includes("gemini-") || Number(/gemini-(\d+)/.exec(model.id)?.[1]) >= 3;
+			const major = Number(/^gemini(?:-live)?-(\d+)/i.exec(model.id)?.[1]);
+			const nestedImages = !(major < 3);
 			const part = {
 				functionResponse: {
 					name: msg.toolName,
@@ -95,7 +96,7 @@ export function canonicalGai(context, model, options) {
 	const tools = currentTools.map((t) => ({
 		name: t.name,
 		description: t.description,
-		parameters: sampling.getJsonSchemaToolParameters(t, sampling.resolveJsonSchemaStrictSampling(t, Number(/gemini-(\d+)/.exec(model.id)?.[1]) >= 3)),
+		parameters: sampling.getJsonSchemaToolParameters(t, sampling.resolveJsonSchemaStrictSampling(t, Number(/^gemini(?:-live)?-(\d+)/i.exec(model.id)?.[1]) >= 3)),
 	}));
 	const systemText = initialSystem ? sanitize(getSystemMessageText(initialSystem)) : "";
 	if (systemText.length > 0 || tools.length > 0) {
@@ -167,5 +168,5 @@ export function canonicalGai(context, model, options) {
 		}
 	}
 
-	return { model: model.id, context: { messages }, options: canonicalRequestOptions(model.api, model, options) };
+	return { model: model.id, context: { messages }, options: canonicalRequestOptions(model.api, model, options, currentTools) };
 }

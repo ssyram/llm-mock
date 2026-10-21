@@ -486,6 +486,8 @@ curl -sS -X POST http://127.0.0.1:19500/roundtext/v1/chat/completions -H 'Author
 
 ### 裁定与权威依据（2000-01-01 UTC）
 
+本表的 `architecture.md` D3、Q.I.3、A4 引用对应历史 `4841f5a` 架构，不是当前文档编号。现行 Q 见 [principles.md](principles.md)，根设计承接见 [architecture.md](architecture.md)；保留原裁定依据，不将当时的覆盖结论外推到当前。
+
 | finding | 最终裁定 | 依据与处置 |
 |---|---|---|
 | F1 | 按 D3 维持，不统一为 401 | `architecture.md` D3：name/端口直接绑定脚本，KeyID/matcher 降为脚本可选输入。`src/server.rs:106` 仅在无 mount 且 KeyID 为空时返回 `401 missing_key`。已在 `mount-routing.md` Contract 与 `README.md` 行为契约明确：挂载路由（含专属端口）不要求认证，KeyID 仅作脚本可选输入、缺省为空串；缺凭据的 401 仅用于 legacy registry 路由。脚本自行返回的错误不受此约束。 |

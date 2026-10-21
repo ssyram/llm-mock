@@ -52,11 +52,11 @@ for await (const row of readFuzzEvidence(path)) {
 	for (const field of ["api", "dir", "name", "seed", "shape", "vision", "category", "captureCount", "line"]) assert.deepEqual(row[field], ledger[field], `${key}/${field}`);
 }
 assert.equal(summary.status, "completed");
-assert.equal(count, summary.seedCount * 20);
+assert.equal(count, summary.seedCount * summary.protocols.length * 2);
 assert.equal(count, summary.rows.length);
 assert.deepEqual(summary.crashFindings, []);
 assert.equal(summary.seedCount, 800);
-assert.equal(Object.keys(coverage).length, 10 * 2 * 8 * 2);
+assert.equal(Object.keys(coverage).length, summary.protocols.length * 2 * 8 * 2);
 assert.ok(Object.values(coverage).every((value) => value === 50));
 const result = { evidenceRows: count, uniqueKeys: seen.size, coverage, oracleRecomputedForGreen: summary.counts.green, counts: summary.counts, verifiedAt: new Date().toISOString() };
 writeFileSync(artifactPath("fuzz-expand-validation.json"), JSON.stringify(result, null, 2));

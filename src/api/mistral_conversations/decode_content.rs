@@ -103,6 +103,7 @@ pub fn text_block(text: &str) -> TextContent {
 }
 pub fn assistant(content: Vec<ContentBlock>, model: &str) -> AssistantMessage {
     AssistantMessage {
+        record: Default::default(),
         content,
         api: API.into(),
         provider: PROVIDER.into(),

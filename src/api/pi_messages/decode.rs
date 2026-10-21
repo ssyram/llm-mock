@@ -20,6 +20,7 @@ pub fn decode(body: &Value) -> Result<UnifiedRequest, String> {
         model: wire.model,
         context: wire.context,
         options: DecodedOptions {
+            cache_retention: wire.options.cache_retention,
             max_tokens: wire.options.max_tokens,
             temperature: wire.options.temperature,
             session_id: wire.options.session_id,

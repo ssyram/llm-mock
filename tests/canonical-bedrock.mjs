@@ -19,7 +19,8 @@ function document(value) {
 
 export function canonicalBedrock(context, model, options) {
 	const collapsed = piAi.collapseSystemMessages(piAi.normalizeContext(context));
-	const tools = piAi.getCurrentTools(collapsed.messages).map((tool) => ({ name: tool.name, description: tool.description, parameters: sampling.getJsonSchemaToolParameters(tool, sampling.resolveJsonSchemaStrictSampling(tool, model.compat?.supportsStrictMode ?? false)) }));
+	const currentTools = options?.toolChoice === "none" ? [] : piAi.getCurrentTools(collapsed.messages);
+	const tools = currentTools.map((tool) => ({ name: tool.name, description: tool.description, parameters: sampling.getJsonSchemaToolParameters(tool, sampling.resolveJsonSchemaStrictSampling(tool, model.compat?.supportsStrictMode ?? false)) }));
 	const initial = collapsed.messages[0]?.role === "system" ? collapsed.messages[0] : undefined;
 	const conversation = piAi.withoutInitialSystemMessage(collapsed.messages);
 	const transformed = tm.transformMessages(conversation, model, (id) => id.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64));
@@ -53,7 +54,7 @@ export function canonicalBedrock(context, model, options) {
 			messages.push({ role: "toolResult", toolCallId: msg.toolCallId, toolName: "", content, isError: msg.isError, timestamp: 0 });
 		}
 	}
-	const requestOptions = canonicalRequestOptions(model.api, model, options);
+	const requestOptions = canonicalRequestOptions(model.api, model, options, currentTools);
 	const reasoning = canonicalBedrockReasoning(model, options ?? {});
 	if (reasoning !== undefined) requestOptions.reasoning = reasoning;
 	return { model: model.id, context: { messages }, options: requestOptions };

@@ -146,6 +146,7 @@ printf '%s' '{"error":{"status":"invalid","code":"bad","message":"invalid"}}'"#.
 #[test]
 fn execute_file_reply_roundtrip() {
     let msg = AssistantMessage {
+        record: Default::default(),
         content: vec![],
         api: "openai-completions".into(),
         provider: "openai".into(),

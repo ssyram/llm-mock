@@ -81,8 +81,8 @@ test("pi-messages preserves errors, orphan calls, metadata, timestamps and empty
 	assert.equal(historical.content[0].redacted, false);
 	assert.equal(historical.content[1].text, "");
 	assert.deepEqual(historical.usage, context.messages[2].usage);
-	assert.equal(historical.diagnostics, undefined);
-	assert.equal(output.context.messages[4].details, undefined);
+	assert.deepEqual(historical.diagnostics, context.messages[2].diagnostics);
+	assert.deepEqual(output.context.messages[4].details, context.messages[4].details);
 	assert.deepEqual(output.context.messages[0].sections, { z: "last", a: "first", removed: null });
 });
 

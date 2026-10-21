@@ -1,6 +1,7 @@
 pub mod content;
 pub mod message;
 pub mod request;
+pub mod record_fields;
 pub mod tool;
 pub mod usage;
 

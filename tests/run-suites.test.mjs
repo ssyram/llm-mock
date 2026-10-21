@@ -10,7 +10,7 @@ function fixture(t, fail = false) {
 	t.after(() => rmSync(dir, { recursive: true, force: true }));
 	mkdirSync(join(dir, "tests"));
 	mkdirSync(join(dir, "bin"));
-	for (const name of ["run-suites.mjs", "pi-ai-reference.mjs", "test-artifacts.mjs", "test-requirements.mjs"]) {
+	for (const name of ["run-suites.mjs", "pi-ai-reference.mjs", "reference-installation.mjs", "test-artifacts.mjs", "test-requirements.mjs"]) {
 		copyFileSync(new URL(name, import.meta.url), join(dir, "tests", name));
 	}
 	symlinkSync(process.execPath, join(dir, "bin/node"));
@@ -50,6 +50,7 @@ test("mismatched submodule fails while independent tests continue", (t) => {
 	const { dir, run } = fixture(t);
 	const src = join(dir, "vendor/pi-mono/packages/ai/src/api");
 	mkdirSync(src, { recursive: true });
+	writeFileSync(join(dir, "vendor/pi-mono/.git"), "fixture");
 	writeFileSync(join(src, "pi-messages.ts"), "");
 	writeFileSync(join(dir, "bin/git"), `#!/bin/sh
 case "$1" in
@@ -61,6 +62,25 @@ esac
 	const result = run();
 	assert.equal(result.status, 1);
 	assert.match(result.stderr, /FAIL pi-ai-reference: pi-ai commit mismatch/);
+	assert.match(result.stdout, /PASS node-tests-node/);
+	assert.doesNotMatch(result.stdout, /SKIP duality/);
+});
+
+test("initialized reference with missing tracked API fails instead of becoming uninitialized skip", (t) => {
+	const { dir, run } = fixture(t);
+	const root = join(dir, "vendor/pi-mono");
+	mkdirSync(root, { recursive: true }); writeFileSync(join(root, ".git"), "fixture");
+	writeFileSync(join(dir, "bin/git"), `#!/bin/sh
+case "$1" in
+ls-files) printf '160000 ${"a".repeat(40)} 0\\tvendor/pi-mono\\n' ;;
+rev-parse) printf '${"a".repeat(40)}\\n' ;;
+diff) exit 1 ;;
+*) exit 1 ;;
+esac
+`, { mode: 0o755 });
+	const result = run();
+	assert.equal(result.status, 1);
+	assert.match(result.stderr, /modified tracked source/);
 	assert.match(result.stdout, /PASS node-tests-node/);
 	assert.doesNotMatch(result.stdout, /SKIP duality/);
 });

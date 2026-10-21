@@ -1,14 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { writeFileSync } from "node:fs";
-import { PROVIDER_CONTRACTS } from "./provider-contracts.mjs";
+import { protocolSelection } from "./protocol-prerequisites.mjs";
+import { PROVIDER_CONTRACTS as ALL_CONTRACTS } from "./provider-contracts.mjs";
 import { artifactPath } from "./test-artifacts.mjs";
 import { referenceState } from "./pi-ai-reference.mjs";
 import { startServer } from "./harness.mjs";
 import { makeModel, streamOptions } from "./models-shared.mjs";
 import { replyCases } from "./corpus.mjs";
 import { captureWireReply } from "./capture-wire-reply.mjs";
-export const TEST_DEPENDENCIES = ["zstd"];
+const { available: PROVIDER_CONTRACTS, skipped: skippedProtocols } = protocolSelection(ALL_CONTRACTS);
 
 function textPrefix(bytes, binary) {
 	const marker = bytes.indexOf(Buffer.from("界😀"));
@@ -53,7 +54,7 @@ test("real HTTP response remains unfinished until the locked client cancels afte
 				rows.push({ api: contract.api, sentBytes, totalBytes: result.wire.body.length, sawDelta, stopReason: result.parsed.stopReason, incompleteConnectionClosed: true, toolEvents });
 			} finally { clearTimeout(deadline); }
 		}
-		writeFileSync(artifactPath("stream-transport-cancel.json"), JSON.stringify({ reference: referenceState(), node: process.version, cases: rows }, null, 2));
+		writeFileSync(artifactPath("stream-transport-cancel.json"), JSON.stringify({ reference: referenceState(), node: process.version, skippedProtocols, cases: rows }, null, 2));
 		t.diagnostic(JSON.stringify({ cancelledLiveResponses: rows.length }));
 	} finally { await server.stop(); }
 });

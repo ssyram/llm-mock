@@ -60,10 +60,13 @@ try {
 	console.error(`FAIL pi-ai-reference: ${error.message}`);
 }
 const compiler = resolve(repoRoot, "vendor/pi-mono/node_modules/typescript/bin/tsc");
-if (existsSync(compiler)) run("contract-types", [compiler, "--project", "tests/contracts/tsconfig.json"]);
-else skip("contract-types", "TypeScript compiler is not prepared; run sh tests/setup.sh");
+if (ready("contract-types", reference)) {
+	if (existsSync(compiler)) run("contract-types", [compiler, "--project", "tests/contracts/tsconfig.json"]);
+	else skip("contract-types", "TypeScript compiler is not prepared; run sh tests/setup.sh");
+}
 const zstd = probe("zstd");
-if (!zstd.invalid && (typeof zlib.zstdCompressSync !== "function" || typeof zlib.zstdDecompressSync !== "function")) zstd.missing = "requires Node native zstd APIs (use Node 24 LTS)";
+const nodeZstd = typeof zlib.zstdCompressSync === "function" && typeof zlib.zstdDecompressSync === "function" ? {} : { missing: "requires Node native zstd APIs (use Node 24 LTS)" };
+if (!zstd.invalid && nodeZstd.missing) zstd.missing = nodeZstd.missing;
 const tests = readdirSync(resolve(repoRoot, "tests")).filter((name) => name.endsWith(".test.mjs")).sort();
 const groups = new Map();
 for (const name of tests) {
@@ -75,17 +78,17 @@ for (const name of tests) {
 for (const [key, files] of groups) {
 	const name = `node-tests-${key.replaceAll(",", "-")}`;
 	if (key.includes("pi-ai") && !ready(name, reference)) continue;
-	if (key.includes("zstd") && !ready(name, zstd)) continue;
+	if (key.split(",").includes("zstd") && !ready(name, zstd)) continue;
+	if (key.split(",").includes("node-zstd") && !ready(name, nodeZstd)) continue;
 	run(name, ["--test", "--test-concurrency=1", ...files]);
 }
-for (const [name, script, compressed] of [
-	["duality", "duality.mjs", true],
-	["transport", "transport-matrix.mjs", false],
-	["fuzz", "fuzz.mjs", true],
-	["property", "property.mjs", false],
+for (const [name, script] of [
+	["duality", "duality.mjs"],
+	["transport", "transport-matrix.mjs"],
+	["fuzz", "fuzz.mjs"],
+	["property", "property.mjs"],
 ]) {
 	if (!ready(name, reference)) continue;
-	if (compressed && !ready(name, zstd)) continue;
 	run(name, [`tests/${script}`]);
 }
 for (const harness of ["pi", "opencode"]) {

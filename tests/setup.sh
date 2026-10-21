@@ -7,4 +7,5 @@ npm ci --workspace packages/ai --workspace packages/telemetry --include-workspac
 npm run build --workspace packages/telemetry
 cd ../../tests
 npm ci --ignore-scripts --no-audit --no-fund
+node prepare-reference-installation.mjs
 node --input-type=module -e 'await import("./pi-ai-imports.mjs"); console.log("Pinned pi-ai reference is ready")'

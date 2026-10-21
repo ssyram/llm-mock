@@ -126,6 +126,7 @@ fn decode_tool_result(value: &Value) -> Result<Message, String> {
         })
         .collect::<Result<Vec<_>, String>>()?;
     Ok(Message::ToolResult(ToolResultMessage {
+        record: Default::default(),
         tool_call_id: value
             .get("toolUseId")
             .and_then(Value::as_str)
@@ -146,6 +147,7 @@ fn text_block(text: &str) -> TextContent {
 }
 fn assistant(content: Vec<ContentBlock>, model: &str) -> AssistantMessage {
     AssistantMessage {
+        record: Default::default(),
         content,
         api: API.into(),
         provider: PROVIDER.into(),

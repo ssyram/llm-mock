@@ -11,6 +11,7 @@ use crate::model::{
 
 fn assistant(content: Vec<ContentBlock>, stop: StopReason) -> AssistantMessage {
 	AssistantMessage {
+		record: Default::default(),
 		content,
 		api: "anthropic-messages".to_owned(),
 		provider: "anthropic".to_owned(),

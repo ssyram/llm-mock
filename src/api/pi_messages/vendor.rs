@@ -19,6 +19,7 @@ pub struct WireOptions {
     pub session_id: Option<String>,
     pub tool_choice: Option<Value>,
     pub reasoning: Option<String>,
+    pub cache_retention: Option<String>,
 }
 
 #[derive(Serialize)]

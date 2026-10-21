@@ -46,6 +46,13 @@ test("fixture options are not invented by a provider definition", () => {
 	assert.equal(output.options.sessionId, undefined);
 });
 
+test("tool mode queries require their current-tool precondition", () => {
+	for (const api of ["google-generative-ai", "google-vertex", "bedrock-converse-stream"]) {
+		const contract = providerContract(api), model = makeModel(api, 1);
+		assert.throws(() => contract.behavior("request", "toolChoice", "any", { model }), /current tool collection/);
+	}
+});
+
 test("runtime injections cannot be fabricated as deterministic expected values", () => {
 	const contract = providerContract("pi-messages"), model = makeModel(contract.api, 1);
 	assert.equal(contract.behavior("request", "timestamp", 7, { model }).kind, "preserve");

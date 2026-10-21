@@ -91,6 +91,7 @@ pub fn decode_request(body: &str, headers: &[(String, String)]) -> Result<(Unifi
 				flush_assistant(&mut pending, &req.model, &mut messages);
 				let (full_id, name) = calls.get(&o.call_id).ok_or_else(|| format!("unpaired tool output for call_id {}", o.call_id))?;
 				messages.push(Message::ToolResult(ToolResultMessage {
+					record: Default::default(),
 					tool_call_id: full_id.clone(),
 					tool_name: name.clone(),
 					content: output_content(&o.output)?,
@@ -105,6 +106,7 @@ pub fn decode_request(body: &str, headers: &[(String, String)]) -> Result<(Unifi
 	attach_tools(&req, &mut messages)?;
 
 	let options = DecodedOptions {
+		cache_retention: None,
 		max_tokens: req.max_output_tokens,
 		temperature: req.temperature,
 		session_id: session.clone(),
@@ -121,6 +123,7 @@ fn flush_assistant(pending: &mut Vec<ContentBlock>, model: &str, messages: &mut 
 		return;
 	}
 	messages.push(Message::Assistant(AssistantMessage {
+		record: Default::default(),
 		content: std::mem::take(pending),
 		api: API.to_string(),
 		provider: PROVIDER.to_string(),

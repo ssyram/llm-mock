@@ -32,7 +32,7 @@ pub enum UserBlock {
 pub struct SystemMessage {
     pub content: SystemContent,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub sections: Option<std::collections::BTreeMap<String, Option<String>>>,
+    pub sections: Option<indexmap::IndexMap<String, Option<String>>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tools_added: Option<Vec<Tool>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -54,8 +54,6 @@ pub struct UserMessage {
     pub timestamp: u64,
 }
 
-/// Mirror of pi-ai AssistantMessage, minus provider-runtime-only fields
-/// (diagnostics, deferred, nestedCalls) that a mock script never produces.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AssistantMessage {
@@ -83,10 +81,10 @@ pub struct AssistantMessage {
     pub timestamp: u64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub duration_ms: Option<u64>,
+    #[serde(default, flatten)]
+    pub record: super::record_fields::RecordFields,
 }
 
-/// Mirror of pi-ai ToolResultMessage, minus record-only fields
-/// (details, usage, nestedCalls) that are never sent to the model.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ToolResultMessage {
@@ -97,6 +95,8 @@ pub struct ToolResultMessage {
     pub timestamp: u64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub duration_ms: Option<u64>,
+    #[serde(default, flatten)]
+    pub record: super::record_fields::RecordFields,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]

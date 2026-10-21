@@ -4,6 +4,7 @@ import * as piAi from "./canonical-transcript.mjs";
 const pick = (value, keys) => Object.fromEntries(keys
 	.filter((key) => value[key] !== undefined && value[key] !== null)
 	.map((key) => [key, structuredClone(value[key])]));
+const record = (value, keys) => Object.fromEntries(keys.filter((key) => value[key] !== undefined).map((key) => [key, structuredClone(value[key])]));
 const text = (block) => pick(block, ["text", "textSignature"]);
 const image = (block) => pick(block, ["data", "mimeType"]);
 const userBlock = (block) => block.type === "image" || "data" in block ? image(block) : text(block);
@@ -26,10 +27,12 @@ export function canonicalPiMessages(context, model, options) {
 		};
 		if (message.role === "toolResult") return {
 			...pick(message, ["role", "toolCallId", "toolName", "isError", "timestamp", "durationMs"]),
+			...record(message, ["details", "usage", "nestedCalls"]),
 			content: message.content.map(userBlock),
 		};
 		const out = pick(message, ["role", "api", "provider", "model", "responseModel", "responseId",
 			"providerThinkingLevel", "thinkingLevel", "stopReason", "errorMessage", "rawStopReason", "endTurn", "timestamp", "durationMs"]);
+		Object.assign(out, record(message, ["diagnostics", "deferred", "nestedCalls"]));
 		out.usage = pick(message.usage, ["input", "output", "cacheRead", "cacheWrite", "cacheWrite1h", "reasoning", "totalTokens", "cost"]);
 		out.content = message.content.map((block) => pick(block, block.type === "text"
 			? ["type", "text", "textSignature"] : block.type === "thinking"

@@ -14,6 +14,7 @@ fn preserves_unified_context_including_timestamps_and_metadata() {
     assert_eq!(
         decoded.options,
         DecodedOptions {
+            cache_retention: Some("long".into()),
             max_tokens: Some(128),
             temperature: Some(0.25),
             session_id: Some("session-1".into()),
@@ -41,7 +42,8 @@ fn preserves_unified_context_including_timestamps_and_metadata() {
     let Message::Assistant(history) = &decoded.context.messages[3] else {
         panic!("assistant")
     };
-    assert_eq!(history, &assistant(StopReason::ToolUse));
+    assert_eq!(history.content, assistant(StopReason::ToolUse).content);
+    assert_eq!(serde_json::to_value(&decoded.context.messages[3]).unwrap(), body["context"]["messages"][3]);
     let Message::ToolResult(tool) = &decoded.context.messages[4] else {
         panic!("toolResult")
     };
@@ -51,16 +53,22 @@ fn preserves_unified_context_including_timestamps_and_metadata() {
 }
 
 #[test]
-fn ignores_extra_ts_assistant_fields_and_role_on_struct() {
+fn preserves_ts_record_fields_without_duplicating_role() {
     let body = request();
     let history = &body["context"]["messages"][3];
     let direct: AssistantMessage = serde_json::from_value(history.clone()).unwrap();
-    assert_eq!(direct, assistant(StopReason::ToolUse));
+    assert_eq!(direct.content, assistant(StopReason::ToolUse).content);
+    assert_eq!(direct.record["diagnostics"], history["diagnostics"]);
+    assert!(direct.record.get("role").is_none());
     let decoded = decode(&body).unwrap();
     let encoded = serde_json::to_value(&decoded.context.messages[3]).unwrap();
     assert_eq!(encoded["role"], "assistant");
-    assert!(encoded.get("diagnostics").is_none());
-    assert!(encoded.get("deferred").is_none());
+    assert_eq!(encoded["diagnostics"], history["diagnostics"]);
+    assert_eq!(encoded["deferred"], history["deferred"]);
+    let tool = serde_json::to_value(&decoded.context.messages[4]).unwrap();
+    for key in ["details", "usage", "nestedCalls"] {
+        assert_eq!(tool[key], body["context"]["messages"][4][key]);
+    }
 }
 
 #[test]

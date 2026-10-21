@@ -3,8 +3,7 @@ use serde::{Deserialize, Serialize};
 use super::message::TranscriptContext;
 
 /// Decoder output: what a vendor wire request decodes into.
-/// `timestamp` fields inside messages are 0 — the wire does not carry them;
-/// duality comparison handles this via the per-API canonical form.
+/// Vendor history timestamps default to 0; pi-messages preserves them.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UnifiedRequest {
@@ -26,6 +25,8 @@ pub struct DecodedOptions {
     pub tool_choice: Option<serde_json::Value>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reasoning: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub cache_retention: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

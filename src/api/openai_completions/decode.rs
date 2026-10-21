@@ -31,6 +31,7 @@ pub fn decode(body: &Value, session_header: Option<&str>) -> Result<UnifiedReque
         model: wire.model,
         context: TranscriptContext { messages },
         options: DecodedOptions {
+            cache_retention: None,
             max_tokens: wire.max_completion_tokens.or(wire.max_tokens),
             temperature: wire.temperature,
             session_id: wire.prompt_cache_key.clone().or_else(|| session_header.map(str::to_string)),
@@ -152,6 +153,7 @@ fn decode_assistant(m: &WireAssistant, model: &str, tools: &[Tool]) -> Result<Op
         return Ok(None);
     }
     Ok(Some(AssistantMessage {
+        record: Default::default(),
         content,
         api: "openai-completions".to_string(),
         provider: String::new(),
@@ -176,6 +178,7 @@ fn parse_arguments(raw: &str) -> Result<Map<String, Value>, String> {
 
 fn decode_tool_result(m: &WireToolResult) -> ToolResultMessage {
     ToolResultMessage {
+        record: Default::default(),
         tool_call_id: m.tool_call_id.clone(),
         tool_name: m.name.clone().unwrap_or_default(),
         content: vec![UserBlock::Text(text_block(join_parts(&m.content, "\n\n")))],

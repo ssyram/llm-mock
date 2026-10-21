@@ -12,6 +12,7 @@ pub fn decode_request(
     let model = model_from_body(body)?;
     let messages = decode_messages(body, &model)?;
     let options = DecodedOptions {
+        cache_retention: None,
         max_tokens: body.get("max_tokens").and_then(Value::as_u64),
         temperature: body.get("temperature").and_then(Value::as_f64),
         session_id: body

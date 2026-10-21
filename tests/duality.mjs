@@ -11,17 +11,19 @@ import { requestDirection, replyDirection } from "./matrix-lib.mjs";
 import { w06RequestCases, w06ReplyCases } from "./w06-matrix-cases.mjs";
 import { w08RequestCases, w08ReplyCases } from "./w08-matrix-cases.mjs";
 
+import { protocolSelection } from "./protocol-prerequisites.mjs";
 const wanted = process.argv.slice(2);
-const protocols = wanted.length ? wanted.map((name) => {
+const requested = wanted.length ? wanted.map((name) => {
 	const protocol = PROTOCOLS.find((p) => p.alias === name || p.api === name);
 	if (!protocol) throw new Error(`unknown protocol: ${name}`);
 	return protocol;
 }) : PROTOCOLS;
+const { available: protocols, skipped: skippedProtocols } = protocolSelection(requested);
 const corpora = loadAllCorpora();
 const results = [];
 const startedAt = new Date().toISOString();
 const resultPath = artifactPath("matrix-ten-results.json");
-const save = () => writeFileSync(resultPath, JSON.stringify({ startedAt, updatedAt: new Date().toISOString(), results }, null, 2));
+const save = () => writeFileSync(resultPath, JSON.stringify({ startedAt, updatedAt: new Date().toISOString(), skippedProtocols, results }, null, 2));
 const port = await freePort();
 const server = await startServer(port);
 try {

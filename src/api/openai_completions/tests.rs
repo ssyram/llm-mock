@@ -11,6 +11,7 @@ fn parse_frame(frame: &str) -> Value {
 
 fn assistant(content: Vec<ContentBlock>, stop: StopReason, usage: Usage) -> AssistantMessage {
     AssistantMessage {
+        record: Default::default(),
         content,
         api: "openai-completions".into(),
         provider: String::new(),
@@ -113,7 +114,7 @@ fn decodes_reasoning_details_and_empty_assistant() {
     assert_eq!(decoded.context.messages.len(), 1);    let Message::Assistant(a) = &decoded.context.messages[0] else { panic!("assistant") };
     let ContentBlock::Thinking(t) = &a.content[0] else { panic!("thinking") };
     assert_eq!(t.thinking, "");
-    assert_eq!(t.thinking_signature.as_deref(), Some(r#"[{"data":"encrypted-signature","id":"call_1","type":"reasoning.encrypted"}]"#));
+    assert_eq!(serde_json::from_str::<serde_json::Value>(t.thinking_signature.as_deref().unwrap()).unwrap(), json!([{"type":"reasoning.encrypted","id":"call_1","data":"encrypted-signature"}]));
     let field_only = decode(&json!({"model": "m", "messages": [
         {"role": "assistant", "content": "answer", "reasoning_content": "hmm"}
     ]}), None).unwrap();

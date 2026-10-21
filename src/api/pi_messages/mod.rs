@@ -13,3 +13,5 @@ mod decode_tests;
 mod encode_tests;
 #[cfg(test)]
 mod test_fixture;
+#[cfg(test)]
+mod preservation_tests;

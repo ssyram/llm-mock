@@ -16,6 +16,8 @@
 
 pi-ai 在客户端方向维护「统一 Message ⇄ 各厂商 wire」的全部脏活；本仓库实现它的**对偶端**，在声明输入域中对照固定参照测试：`decode(convert(C)) ≡ canonical(C)`、`parse(encode(A)) ≡ providerFill(A)`（oracle = 锁定版本 pi-ai 适配器）。
 
+问题意识、前提与根设计义务：[principles](docs/design/mock-llm-server/principles.md) → [architecture](docs/design/mock-llm-server/architecture.md)。测试证据对照这些义务，不反过来定义义务。
+
 > 🚀 **新手从这里开始**：[hands-on-tutorial.md](docs/design/mock-llm-server/hands-on-tutorial.md) —— 从零到多轮/工具/错误路径的全流程实测教程（每步真实命令＋输出，经新用户盲测校验）。
 
 ## 支持的协议
@@ -118,8 +120,8 @@ cargo test
 ```
 
 - `cargo test` 始终运行不依赖 Python 的 Rust 核心单测；可选入口先独立探测并运行 Python 脚本路由组，再探测 Node，条件具备时运行 Node 单测、对偶矩阵、transport、完整 800-seed fuzz、property，以及教程约定的 Pi／OpenCode CLI 往返。只跑 Python 组用 `cargo test --test optional_suites -- python`；只跑 Node 组用 `cargo test --test optional_suites -- node`。测试命令本身不安装依赖或下载 submodule。
-- Python、zstd 及客户端有各自的依赖要求，不作为无依赖核心单测的隐含前提。缺 Python、Node（最低 23）、pi-ai 源码或依赖、Pi、OpenCode 时，对受影响的测试组明确输出 `WARNING: SKIP ... NOT VERIFIED`；缺 zstd CLI／Node 原生 zstd API 时跳过依赖 Codex 压缩的组。无关测试继续运行；已安装工具损坏、参照版本不符／被修改及断言失败均使 `cargo test` 失败。跳过不等于证明对偶，正式开发仍须取得约定的协议对偶证据。
-- 官方参照是 `vendor/pi-mono` Git submodule：[earendil-works/pi](https://github.com/earendil-works/pi)，**v1.2.0**，固定 commit **`06a466935536f8c9bcacb2d5efc0fc021be1bdff`**。pi-messages 属于同一源码树。Git gitlink 锁源码，submodule 内的 `package-lock.json` 锁 npm 依赖；升级后须重跑矩阵。旧 fork commit `371cc25` 的历史报告不证明此官方版本已通过。
+- Python、zstd 及客户端有各自的依赖要求，不作为无依赖核心单测的隐含前提。缺 Python、Node（最低 23）、pi-ai 源码或依赖、Pi、OpenCode 时，对受影响的测试组明确输出 `WARNING: SKIP ... NOT VERIFIED`；缺 zstd CLI／Node 原生 zstd API 只跳受影响的 Codex HTTP 用例，其他协议与无压缩 WS／ADC 继续；Node 原生压缩与系统 CLI 分别门控。无关测试继续运行；已安装工具损坏、参照版本不符／被修改及断言失败均使 `cargo test` 失败。跳过不等于证明对偶，正式开发仍须取得约定的协议对偶证据。
+- 官方参照是 `vendor/pi-mono` Git submodule：[earendil-works/pi](https://github.com/earendil-works/pi)，**v1.2.0**，固定 commit **`06a466935536f8c9bcacb2d5efc0fc021be1bdff`**。pi-messages 属于同一源码树。Git gitlink 锁源码，submodule 内的 `package-lock.json` 锁 npm 依赖；setup 记录实际安装及编译产物内容，SDK 加载前检查漂移，不只相信版本号或 import 成功；升级后须重跑矩阵。旧 fork commit `371cc25` 的历史报告不证明此官方版本已通过。
 - 日志和新生成证据统一写入 `target/test-artifacts/`（可用 `MOCK_TEST_ARTIFACTS` 指定），不覆盖历史报告。独立 Node 命令可用 `MOCK_SERVER_BIN` 选择服务端；Cargo 自动传入本轮构建的可执行文件，兼容自定义 target 目录。缺私有语料时明确跳过对应会话，仍运行合成用例。
 - 十个 typed provider 契约生成 canonical 期待，各自的 options 声明包含可执行的精确变换。独立字段扰动、流分片／取消、小域工具轨迹及定向故障实验随依赖组自动运行；参照准备了 TypeScript 编译器时自动检查类型，缺失则明确 NOT VERIFIED，见[实验合同与边界](docs/design/mock-llm-server/duality-experiments.md)。
 - `tests/fixtures/corpus-discovery/` 的公开脱敏片段携带来源进入双方向矩阵和property，不伪造完整会话。Property逐次对照独立canonical；原始帧／投影变化仍记录为观察，不假定有损转换天然不动，见[性质合同](docs/design/mock-llm-server/property-tests.md)。

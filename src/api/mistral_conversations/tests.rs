@@ -141,6 +141,7 @@ fn encodes_mistral_thinking_in_content_chunks() {
 #[test]
 fn encodes_mistral_sse_completion() {
     let message = AssistantMessage {
+        record: Default::default(),
         content: vec![ContentBlock::Text(TextContent {
             text: "hello".into(),
             text_signature: None,

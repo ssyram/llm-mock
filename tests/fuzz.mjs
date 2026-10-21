@@ -8,13 +8,15 @@ import { PROTOCOLS } from "./protocol-matrix.mjs";
 import { requestDirection, replyDirection } from "./matrix-lib.mjs";
 import { classify, evidencePath, saveReport } from "./fuzz-expand-report.mjs";
 
+import { protocolSelection } from "./protocol-prerequisites.mjs";
 const APIS = PROTOCOLS.map(({ api }) => api);
 export { rng, rndText, genContext, genReplyCase, APIS };
 
 async function main() {
 	const seedCount = Number(process.argv[2] ?? 800);
 	if (!Number.isSafeInteger(seedCount) || seedCount < 1) throw new Error("seedCount must be a positive safe integer");
-	const state = { seedCount, startedAt: new Date().toISOString(), status: "running", rows: [], crashFindings: [], notes: [] };
+	const selection = protocolSelection(PROTOCOLS);
+	const state = { protocols: selection.available.map(({ api }) => api), skippedProtocols: selection.skipped, seedCount, startedAt: new Date().toISOString(), status: "running", rows: [], crashFindings: [], notes: [] };
 	const deadline = Date.now() + 24 * 60 * 1000;
 	writeFileSync(evidencePath, "");
 	saveReport(state);
@@ -27,7 +29,9 @@ async function main() {
 	}
 	try {
 		await restart();
-		for (const [protocolIndex, { api, canonical }] of PROTOCOLS.entries()) {
+		for (const [protocolIndex, protocol] of PROTOCOLS.entries()) {
+			if (!selection.available.includes(protocol)) continue;
+			const { api, canonical } = protocol;
 			for (let seed = 1; seed <= seedCount; seed++) {
 				if (Date.now() >= deadline) throw new Error("24-minute runner deadline reached; partial evidence preserved");
 				const random = rng(seed * 1000003 + protocolIndex);
