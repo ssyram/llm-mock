@@ -86,4 +86,6 @@ cargo test --test optional_suites -- node
 
 类型检查、变更源语法/200有效行限制、文档链接及diff检查通过；clippy退出0，仍报告既有large_enum_variant及useless_conversion告警，未为消除告警追加无关重构。仅缺CLI的隔离集成本轮也被统一入口实际运行，不从环境齐全的绿色推断降级路径正确。
 
-尚未闭合的叶子合同：进程非零退出但stdout是合法AssistantMessage/MockError时的优先级。当前实现按stdout解释，既有stdout合同没有规定退出码优先；本轮不把它冒充已证实产品Bug，也不声称全部进程失败语义已验收。待明确该设计约定后再实施，不改变Q.I。
+该批交付时尚未闭合的是脚本exit/stdout优先级；随后用户指定普通stream error处理，现已在mock-scripts.md明确并落实：有效MockError照常传播，其他非零退出为script_failed，只有exit 0接受成功回复。HTTP开流前为原生错误JSON/状态，已连接WS为原生error帧；锁定Codex仍可将429文案标准化，不反过来改wire。该后续修复有单独运行日志，不倒写上一批验证范围，也不改变Q.I。
+
+后续执行结果：registry定向14项Rust回归（含新增3项退出规则）及5项直接HTTP/WS/parser回归通过；默认完整 `cargo test` 最终退出0（target/cargo-test-script-exit-final.log），Rust141、Node219、Python2通过，Node内1项私有回放跳过，14个可选组通过。首次完整执行曾由未修改的端口测试AddrInUse及继发锁中毒中断，端口用例单独和默认全量重跑通过；target/script-exit-port-failure.md保留该观察，不把重跑通过冒充端口竞争已修。clippy退出0仍有既有两类告警。

@@ -13,6 +13,16 @@
   - AssistantMessage（serde 同 `src/model/message.rs`，camelCase）：`content`（`{"type":"text","text"}` / `{"type":"toolCall","id","name","arguments"}`）、`api`、`provider`、`model`、`usage`（全字段：`input/output/cacheRead/cacheWrite/totalTokens/cost{input,output,cacheRead,cacheWrite,total}`）、`stopReason`（`stop|toolUse|…`）、`timestamp`。
   - `{"error":{"status","code","message"}}` → 协议可见错误（F2 历史 bug 已修，见 §7 的严格验收）。
 
+### 进程退出与错误通道（现行）
+
+在输入传递和输出获取完成后：有效的结构化MockError按原status/code/message传播，退出码非零也不把模拟429改成500。其他输出必须同时满足exit 0及合法AssistantMessage；非零退出即返回 `MockError{status:500,code:"script_failed",message:"script exited unsuccessfully: <退出状态>"}`，成功JSON、空输出或无效JSON都不能掩盖它。exit 0的空/非法输出继续使用原有script_no_output/script_output_invalid/script_error_invalid错误。
+
+HTTP先执行脚本再发送响应流，因此上述失败走HTTP状态及各协议原生错误JSON，不先发200再伪造通用SSE事件；pi-ai把它解释为error事件/stopReason=error。已建立Codex WebSocket使用该协议原生error帧。此规则不新增脚本自身逐token输出或已开HTTP流后的失败机制。
+
+wire按协议携带code/message；客户端可能标准化显示，例如固定Codex adapter把HTTP429映射为ChatGPT额度提示。不能据此改原始错误状态或修改只读客户端来强求所有parser暴露同一个code槽。
+
+直接回归：`src/registry/script_exit_tests.rs` 检查优先级与exit 0旧行为，`tests/script-exit-contract.test.mjs` 检查实际协议parser的error而非done、HTTP500/模拟429原始错误体、正常exit 0及已连接WS原生错误。
+
 ## 2. 交付物
 
 - `round-counter.mjs`：无状态多轮范式。`round = transcript 中 role=assistant 条数 + 1`；mode=text 每轮回 `ROUND-r: r`，mode=tool 第 1 轮回 `toolCall`（`stopReason=toolUse`）、第 ≥2 轮文本收尾。参数 `--mode=text|tool`。回显 `api/model` 取自 stdin，usage 按消息数填。

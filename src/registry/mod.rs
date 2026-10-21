@@ -4,6 +4,8 @@ use std::sync::RwLock;
 
 use serde::{Deserialize, Serialize};
 
+mod execute_script;
+
 use crate::model::{AssistantMessage, MockError, UnifiedRequest};
 
 /// Registry matcher over the decoded request's text content.
@@ -185,42 +187,7 @@ impl Registry {
                 serde_json::from_str(&raw)
                     .map_err(|e| MockError { status: 500, code: "reply_file_invalid".into(), message: format!("{path}: {e}") })
             }
-            Reply::Script { command } => {
-                use std::io::Write;
-                use std::process::{Command, Stdio};
-                let mut child = Command::new("sh")
-                    .arg("-c")
-                    .arg(command)
-                    .current_dir(script_dir(command).unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from("/"))))
-                    .stdin(Stdio::piped())
-                    .stdout(Stdio::piped())
-                    .stderr(Stdio::piped())
-                    .spawn()
-                    .map_err(|e| MockError { status: 500, code: "script_spawn_failed".into(), message: format!("{command}: {e}") })?;
-                {
-                    let stdin = child.stdin.as_mut().expect("script stdin");
-                    stdin
-                        .write_all(serde_json::to_string(input).expect("script input").as_bytes())
-                        .map_err(|e| MockError { status: 500, code: "script_input_failed".into(), message: e.to_string() })?;
-                }
-                let output = child
-                    .wait_with_output()
-                    .map_err(|e| MockError { status: 500, code: "script_failed".into(), message: e.to_string() })?;
-                let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
-                if stdout.is_empty() {
-                    let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-                    return Err(MockError { status: 500, code: "script_no_output".into(), message: format!("{command}: {stderr}") });
-                }
-                let value: serde_json::Value = serde_json::from_str(&stdout)
-                    .map_err(|e| MockError { status: 500, code: "script_output_invalid".into(), message: format!("{command}: {e}") })?;
-                if let Some(err) = value.get("error") {
-                    let error: MockError = serde_json::from_value(err.clone())
-                        .map_err(|e| MockError { status: 500, code: "script_error_invalid".into(), message: e.to_string() })?;
-                    return Err(error);
-                }
-                serde_json::from_value(value)
-                    .map_err(|e| MockError { status: 500, code: "script_output_invalid".into(), message: format!("{command}: {e}") })
-            }
+            Reply::Script { command } => execute_script::execute_script(command, input),
             Reply::Error { status, code, message } => {
                 Err(MockError { status: *status, code: code.clone(), message: message.clone() })
             }
@@ -232,3 +199,5 @@ impl Registry {
 pub type RegistryMap = BTreeMap<String, Vec<Entry>>;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod script_exit_tests;

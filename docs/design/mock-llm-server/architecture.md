@@ -90,7 +90,7 @@ Codex顶层instructions始终先于input中的system更新，工具声明附在�
 
 ## 边界与证据归属
 
-当前脚本stdout成功JSON与非零进程退出的优先关系尚无明确叶子合同；既有实现按stdout解析，不能据此认证“所有非零退出都已验收为脚本失败”。此缺口留在根设计可见位置，不改写Q或擅自改变现有脚本行为。
+脚本叶子合同现已明确：完成输入传递及取得输出后，有效MockError沿用其模拟状态；其他非零退出为HTTP500/script_failed，合法成功JSON不能掩盖进程失败。HTTP开流前复用原生协议错误体，已连接WS使用原生error帧；客户端最终表现为error而非done，具体code/message展示仍遵守锁定parser。细节与回归见 [mock-scripts.md](mock-scripts.md#进程退出与错误通道现行)。这不新增脚本逐token输出，也不声称覆盖任意已开HTTP流后的异常。
 
 服务/admin绑定loopback，脚本为调用者信任的本地代码；不是对不可信远端提供的沙箱。真实签名有效性、云端账号/网络、未枚举compat分支不由本地Mock样本自动证明。
 
