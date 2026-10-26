@@ -26,19 +26,32 @@ printf '%s\n' 'pipeline marker' | cat > fidelity-marker.txt`,
 });
 
 const TUTORIAL_STEPS = Object.freeze([
-  { tool: "fsm-enter", text: "【第 1 段】进入带沙盒护栏的 FSM（profile：工作区可写、protected/ 禁写、网络仅允许 example.com:443）。接下来每条消息推进一段，所有命令都经 srt 沙盒真实执行。" },
+  { tool: "fsm", discover: "enter_fsm", args: null, text: "【第 1 段】进入带沙盒护栏的 FSM（profile：工作区可写、protected/ 禁写、网络仅允许 example.com:443）。发任意一条消息自动连跑全部 15 段，所有命令都经 srt 沙盒真实执行。" },
   { tool: "bash", command: "printf 'tutorial-ok\\n' > demo-allowed.txt", text: "【第 2 段】写工作区根下的 demo-allowed.txt —— 预期成功：它在 allowWrite（工作区）内。" },
   { tool: "bash", command: "printf 'should-not-land\\n' > protected/sample.txt", text: "【第 3 段】下面的命令预期无法执行，因为 denyWrite（protected/）优先于 allowWrite —— 应该看到 PermissionError，且文件内容不变。" },
-  { tool: "bash", command: "cat > probe.py <<'PYEOF'\nfrom pathlib import Path\nprint('PY_STARTED', flush=True)\nPath('protected/sample.txt').write_bytes(b'changed by python\n')\nprint('PY_WRITE_SUCCEEDED', flush=True)\nPYEOF", text: "【第 4 段】在沙盒内现场写一个 python 脚本 probe.py（在工作区，允许）—— 下一场用它的间接写来测拦截。" },
+  { tool: "bash", command: "cat > probe.py <<'PYEOF'\nfrom pathlib import Path\nprint('PY_STARTED', flush=True)\nPath('protected/sample.txt').write_bytes(b'changed by python\\n')\nprint('PY_WRITE_SUCCEEDED', flush=True)\nPYEOF", text: "【第 4 段】在沙盒内现场写一个 python 脚本 probe.py（在工作区，允许）—— 下一场用它的间接写来测拦截。" },
   { tool: "bash", command: "python3 probe.py", text: "【第 5 段】运行 probe.py：脚本本身只是普通 python，但它试图改 protected/sample.txt —— 下面的命令预期无法执行，因为沙盒拦的是真实文件操作而不是命令文本；应看到 PermissionError 且 PY_WRITE_SUCCEEDED 不会出现。" },
   { tool: "bash", command: "curl --silent --show-error --fail-with-body --max-time 20 --write-out '\\nHTTP_STATUS=%{http_code}\\n' https://example.com:443/", text: "【第 6 段】访问 example.com:443 —— 预期成功：它在 allowedDomains 里（沙盒代理放行）。" },
   { tool: "bash", command: "curl --silent --show-error --max-time 20 https://example.org:443/", text: "【第 7 段】访问 example.org:443 —— 下面的命令预期无法执行，因为它不在 allowedDomains，沙盒代理会拦下。" },
   { tool: "bash", command: ": > profile.json", text: "【第 8 段】当场把沙盒配置 profile.json 清空（它就在工作区里、可写）—— 预期这个写本身成功。" },
   { tool: "bash", command: "printf 'after-broken\\n' > demo-after-broken.txt", text: "【第 9 段】profile 已经是空文件 —— 下面的命令预期无法执行：沙盒配置无法加载，门禁 fail-closed 拒绝执行，绝不会裸跑原命令（srt 报错退出）。" },
-  { tool: "bash", restoreProfile: true, text: "【第 10 段】把完整 profile 写回去（launcher 生成的同一份内容）—— 预期成功。" },
+  { tool: "write", text: "【第 10 段】bash 被它自己弄坏的配置封死了（fail-closed 连修复命令也不放行，这是设计），所以恢复走宿主的 write 工具——不经 bash 沙盒。预期写回成功。" },
   { tool: "bash", command: "printf 'restored\\n' > demo-restored.txt", text: "【第 11 段】再写一次文件 —— 预期成功：profile 恢复后护栏重新生效。" },
-  { tool: "fsm-exit", text: "【第 12 段】教程结束，退出 FSM。对比看：demo-allowed.txt / demo-restored.txt 被写入，protected/sample.txt 始终原样，profile.json 又是完整配置。" },
+  { tool: "fsm", discover: "submit_self_check", args: { target: "done", checks: [] }, text: "【第 12 段】按协议收尾：先提交自检（声明准备迁移到终态 done）。" },
+  { tool: "fsm", discover: "try_transition", args: { target: "done", evidence: "bash runtime tutorial finished; effects on disk" }, text: "【第 13 段】迁移到终态 done —— 预期 accept。" },
+  { tool: "fsm", discover: "submit_self_check", args: { target: "_fsm_exit", checks: [] }, text: "【第 14 段】退出前再交一次自检（目标 _fsm_exit）。" },
+  { tool: "fsm", discover: "exit_fsm", args: {}, text: "【第 15 段】退出 FSM —— 预期 accept。之后这次 Stop 会被服务端直接放行：判到终态即允许，无需任何 LLM 分析。对比看：demo-allowed.txt / demo-restored.txt 被写入，protected/sample.txt 始终原样，profile.json 已恢复完整。" },
 ]);
+
+function hostToolByExactName(messages, exact) {
+  for (const message of messages) {
+    if (message?.role !== "system" || !Array.isArray(message.toolsAdded)) continue;
+    for (const tool of message.toolsAdded) {
+      if (tool?.name === exact) return tool.name;
+    }
+  }
+  return undefined;
+}
 
 function fsmToolName(messages, needle) {
   const names = [];
@@ -89,18 +102,27 @@ function tutorialRespond({ messages, api, model, toolName, argumentsFixture = {}
   const id = `fsmbr_tutorial_${done + 1}`;
   let call;
   if (next.tool === "bash") {
-    const command = next.restoreProfile
-      ? `cat > profile.json <<'PJEOF'\n${argumentsFixture.profileJson}\nPJEOF`
-      : next.command;
     call = { name: toolName, arguments: {
       timeout: argumentsFixture.timeout,
       description: argumentsFixture.description,
-      command,
+      command: next.command,
     } };
+  } else if (next.tool === "write") {
+    const writeTool = hostToolByExactName(messages, "write");
+    if (!writeTool) throw new Error("tutorial restore step needs the host write tool; none advertised");
+    call = { name: writeTool, arguments: {
+      filePath: `${argumentsFixture.workdir}/profile.json`,
+      content: String(argumentsFixture.profileJson ?? "") + "\n",
+    } };
+  } else if (next.tool === "fsm") {
+    const fsmTool = fsmToolName(messages, next.discover);
+    if (!fsmTool) throw new Error(`tutorial step needs an ${next.discover} MCP tool; none advertised`);
+    const args = next.discover === "enter_fsm"
+      ? { name: String(argumentsFixture.fsmName ?? "bash-runtime-tutorial") }
+      : next.args;
+    call = { name: fsmTool, arguments: args };
   } else {
-    const fsmTool = fsmToolName(messages, next.tool === "fsm-enter" ? "enter_fsm" : "exit_fsm");
-    if (!fsmTool) throw new Error(`tutorial step ${done + 1} needs an ${next.tool} MCP tool; none advertised`);
-    call = { name: fsmTool, arguments: next.tool === "fsm-enter" ? { name: String(argumentsFixture.fsmName ?? "bash-runtime-tutorial") } : {} };
+    throw new Error(`tutorial step ${done + 1}: unknown tool kind ${next.tool}`);
   }
   return assistantMessage(api, model, messages, [
     { type: "text", text: next.text + carry },
