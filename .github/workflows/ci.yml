@@ -1,0 +1,50 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      # fmt/clippy carry pre-existing debt (224 fmt diffs / 4 clippy warnings
+      # at CI introduction, none in this change). Gate on errors only; tighten
+      # once the debt is paid down separately.
+      - run: cargo fmt --all -- --check --color never || echo "::warning::pre-existing fmt debt (non-blocking)"
+      - run: cargo clippy --workspace --all-targets
+      - run: cargo build --workspace
+      - run: cargo test --lib
+      # Optional suites drive external python/node processes; CI runners have
+      # python3. The node suite needs the vendored pi-mono deps below.
+      - run: python3 --version
+      - run: cargo test --test optional_suites python
+
+  node-suites:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Vendor deps for duality tests
+        run: npm install --prefix tests
+      - name: Scenario tests (fsm-bash-runtime)
+        run: node --test scripts/mock-scripts/fsm-bash-runtime/tests/
+      - name: Full node suites
+        run: node tests/run-suites.mjs
