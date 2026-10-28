@@ -36,7 +36,11 @@ async fn bedrock_http_returns_binary_eventstream_for_bearer_and_sigv4() {
         let mut headers = HeaderMap::new();
         headers.insert("authorization", HeaderValue::from_str(auth).unwrap());
         let response = bedrock(State(state()), Uri::from_static("/model/anthropic.claude-mock/converse-stream"), headers, r#"{"messages":[{"role":"user","content":[{"text":"hello"}]}]}"#.into()).await;
-        assert_eq!(response.status(), StatusCode::OK);
+        if response.status() != StatusCode::OK {
+            let status = response.status();
+            let body = String::from_utf8_lossy(&axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap()).to_string();
+            panic!("auth={auth:?} status={status} body={body}");
+        }
         assert_eq!(response.headers()["content-type"], "application/vnd.amazon.eventstream");
         let bytes = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
         let events = decode_frames(&bytes);
@@ -72,3 +76,4 @@ async fn bedrock_http_errors_keep_status_and_aws_json_shape() {
         assert!(error["message"].as_str().is_some());
     }
 }
+
