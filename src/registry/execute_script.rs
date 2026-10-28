@@ -25,16 +25,19 @@ pub(super) fn execute_script(command: &str, input: &Value) -> Result<AssistantMe
         .stderr(Stdio::piped())
         .spawn()
         .map_err(|error| failed("script_spawn_failed", format!("{command}: {error}")))?;
-    child
-        .stdin
-        .as_mut()
-        .expect("script stdin")
-        .write_all(
-            serde_json::to_string(input)
-                .expect("script input")
-                .as_bytes(),
-        )
-        .map_err(|error| failed("script_input_failed", error.to_string()))?;
+    let mut stdin = child.stdin.take().expect("script stdin");
+    let payload = serde_json::to_string(input).expect("script input");
+    // EPIPE here is legal, not an error: a script that never reads stdin
+    // (printf-style fixtures) may finish and exit before this write lands.
+    // Permitted-but-untimed — never gated on how soon it happens. The
+    // script's stdout is the contract; a real write error is still fatal.
+    if let Err(error) = stdin.write_all(payload.as_bytes()) {
+        if error.kind() != std::io::ErrorKind::BrokenPipe {
+            drop(stdin);
+            return Err(failed("script_input_failed", error.to_string()));
+        }
+    }
+    drop(stdin);
     let output = child
         .wait_with_output()
         .map_err(|error| failed("script_failed", error.to_string()))?;
