@@ -45,6 +45,6 @@ jobs:
       - name: Vendor deps for duality tests
         run: npm install --prefix tests
       - name: Scenario tests (fsm-bash-runtime)
-        run: node --test scripts/mock-scripts/fsm-bash-runtime/tests/
+        run: node --test scripts/mock-scripts/fsm-bash-runtime/tests/*.test.mjs
       - name: Full node suites
         run: node tests/run-suites.mjs
