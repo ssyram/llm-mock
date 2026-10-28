@@ -1,0 +1,15 @@
+name: debug-bedrock
+on: workflow_dispatch
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sh --version | head -1
+          CMD="printf '%s' '{\"content\":[{\"type\":\"text\",\"text\":\"hello\"}],\"stopReason\":\"stop\",\"cost\":{\"input\":0.0}}'"
+          echo "--- direct:"
+          sh -c "$CMD"; echo "exit=$?"
+          echo "--- via env file:"
+          echo "$CMD" > /tmp/c.sh && sh /tmp/c.sh; echo "exit=$?"
+          cargo test --lib api::bedrock_converse_stream::transport_tests -- --nocapture 2>&1 | grep -E 'SAMPLE_COMMAND|test result|panicked|error' | head -5
