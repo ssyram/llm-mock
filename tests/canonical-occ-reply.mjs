@@ -37,6 +37,16 @@ export function fillCompletions(out, _unused, model) {
 			const existing = rebuilt.find((block) => block.type === "toolCall" && block.id === b.id);
 			if (existing) {
 				existing.name ||= b.name;
+				// pi-ai 1.4 openai-completions decode: a repeated tool-call id is
+				// routed back to the FIRST block (id lookup wins once the second
+				// delta carries the same id), so the arguments texts concatenate;
+				// finishBlock then parses strictly (parseToolCallArguments) and the
+				// call lands as {} + argumentsError instead of the v1.2 lenient
+				// prefix parse.
+				const first = JSON.stringify(existing.arguments ?? {});
+				const second = JSON.stringify(b.arguments ?? {});
+				existing.arguments = {};
+				existing.argumentsError = `Unexpected non-whitespace character after JSON at position ${first.length} (line 1 column ${first.length + 1})\n\nReceived arguments:\n${first}${second}`;
 			} else {
 				const { type, id, name, arguments: args } = b;
 				rebuilt.push({ type, id, name, arguments: args });

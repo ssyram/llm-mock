@@ -56,44 +56,44 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "content": "think hard",
               "role": "user",
+              "content": "think hard",
               "timestamp": 0
             },
             {
-              "api": "openai-completions",
+              "role": "assistant",
               "content": [
                 {
-                  "text": "first thought\nsecond thoughtdone",
-                  "type": "text"
+                  "type": "text",
+                  "text": "done"
                 }
               ],
-              "model": "mock-gpt",
+              "api": "openai-completions",
               "provider": "",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64
         }
@@ -163,62 +163,63 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "api": "openai-completions",
+              "role": "assistant",
               "content": [
                 {
-                  "arguments": {
-                    "value": "hello"
-                  },
+                  "type": "toolCall",
                   "id": "call-1_fc_item",
                   "name": "echo",
-                  "type": "toolCall"
+                  "arguments": {
+                    "value": "hello"
+                  }
                 }
               ],
-              "model": "mock-gpt",
+              "api": "openai-completions",
               "provider": "",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
+              "role": "toolResult",
+              "toolCallId": "call-1_fc_item",
+              "toolName": "",
               "content": [
                 {
-                  "text": "ok"
+                  "text": "(no tool output)"
                 }
               ],
               "isError": false,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call-1_fc_item",
-              "toolName": ""
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64
         }
       },
       "diffs": [
         "$.context.messages[0].content[0].id: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
-        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\""
+        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
+        "$.context.messages[1].content[0].text: expected \"ok\", got \"(no tool output)\""
       ],
       "ok": false
     },
@@ -299,56 +300,59 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "api": "openai-completions",
+              "role": "assistant",
               "content": [
                 {
-                  "arguments": {
-                    "value": "hello"
-                  },
+                  "type": "toolCall",
                   "id": "call-1_fc_item",
                   "name": "echo",
-                  "type": "toolCall"
+                  "arguments": {
+                    "value": "hello"
+                  }
                 }
               ],
-              "model": "mock-gpt",
+              "api": "openai-completions",
               "provider": "",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
+              "role": "toolResult",
+              "toolCallId": "call-1_fc_item",
+              "toolName": "",
               "content": [
                 {
-                  "text": "middle"
+                  "text": "(no tool output)"
                 }
               ],
               "isError": false,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call-1_fc_item",
-              "toolName": ""
+              "timestamp": 0
             },
             {
+              "role": "user",
               "content": [
                 {
-                  "text": "Attached image(s) from tool result:"
+                  "data": "undefined",
+                  "mimeType": "undefined"
                 },
                 {
                   "data": "AQID",
@@ -359,19 +363,21 @@
                   "mimeType": "image/png"
                 }
               ],
-              "role": "user",
               "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64
         }
       },
       "diffs": [
         "$.context.messages[0].content[0].id: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
-        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\""
+        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
+        "$.context.messages[1].content[0].text: expected \"middle\", got \"(no tool output)\"",
+        "$.context.messages[2].content[0].data: unexpected \"undefined\"",
+        "$.context.messages[2].content[0].mimeType: unexpected \"undefined\"",
+        "$.context.messages[2].content[0].text: missing (expected \"Attached image(s) from tool result:\")"
       ],
       "ok": false
     },
@@ -448,75 +454,80 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "api": "openai-completions",
+              "role": "assistant",
               "content": [
                 {
-                  "arguments": {
-                    "value": "hello"
-                  },
+                  "type": "toolCall",
                   "id": "call-1_fc_item",
                   "name": "echo",
-                  "type": "toolCall"
+                  "arguments": {
+                    "value": "hello"
+                  }
                 }
               ],
-              "model": "mock-gpt",
+              "api": "openai-completions",
               "provider": "",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
+              "role": "toolResult",
+              "toolCallId": "call-1_fc_item",
+              "toolName": "",
               "content": [
                 {
-                  "text": "(see attached image)"
+                  "text": "(no tool output)"
                 }
               ],
               "isError": false,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call-1_fc_item",
-              "toolName": ""
+              "timestamp": 0
             },
             {
+              "role": "user",
               "content": [
                 {
-                  "text": "Attached image(s) from tool result:"
+                  "data": "undefined",
+                  "mimeType": "undefined"
                 },
                 {
                   "data": "AQID",
                   "mimeType": "image/png"
                 }
               ],
-              "role": "user",
               "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64
         }
       },
       "diffs": [
         "$.context.messages[0].content[0].id: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
-        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\""
+        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
+        "$.context.messages[1].content[0].text: expected \"(see attached image)\", got \"(no tool output)\"",
+        "$.context.messages[2].content[0].data: unexpected \"undefined\"",
+        "$.context.messages[2].content[0].mimeType: unexpected \"undefined\"",
+        "$.context.messages[2].content[0].text: missing (expected \"Attached image(s) from tool result:\")"
       ],
       "ok": false
     },
@@ -524,7 +535,7 @@
       "property": "P1",
       "api": "openai-completions",
       "name": "w06-surrogate-order",
-      "phase": "compare",
+      "phase": "v1.4-rejected-wire",
       "expected": {
         "context": {
           "messages": [
@@ -581,61 +592,72 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "content": "sx",
               "role": "system",
+              "content": "sx",
               "timestamp": 0
             },
             {
-              "content": [
-                {
-                  "text": "ux"
-                }
-              ],
               "role": "user",
+              "content": [
+                {
+                  "data": "undefined",
+                  "mimeType": "undefined"
+                },
+                {
+                  "data": "undefined",
+                  "mimeType": "undefined"
+                }
+              ],
               "timestamp": 0
             },
             {
-              "api": "openai-completions",
+              "role": "assistant",
               "content": [
                 {
-                  "text": "ax",
-                  "type": "text"
+                  "type": "text",
+                  "text": "ax"
                 }
               ],
-              "model": "mock-gpt",
+              "api": "openai-completions",
               "provider": "",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64
         }
       },
       "diffs": [
-        "$.context.messages[1].content: expected length 2, got 1"
+        "$.context.messages[1].content[0].data: unexpected \"undefined\"",
+        "$.context.messages[1].content[0].mimeType: unexpected \"undefined\"",
+        "$.context.messages[1].content[0].text: missing (expected \"\")",
+        "$.context.messages[1].content[1].data: unexpected \"undefined\"",
+        "$.context.messages[1].content[1].mimeType: unexpected \"undefined\"",
+        "$.context.messages[1].content[1].text: missing (expected \"ux\")"
       ],
-      "ok": false
+      "ok": false,
+      "note": "pi-ai 1.4.0 strips the lone-surrogate image data but still emits the image block with a bare {\"type\":\"base64\"} source (no media_type/data); the mock correctly rejects that as invalid wire (400). Regeneration of this counterexample is deferred until upstream clarifies malformed-surrogate image handling; the v1.2.0 actual is kept below for history."
     },
     {
       "property": "P1",
@@ -686,39 +708,39 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "api": "openai-completions",
+              "role": "assistant",
               "content": [
                 {
-                  "text": "kept",
-                  "type": "text"
+                  "type": "text",
+                  "text": "kept"
                 }
               ],
-              "model": "mock-gpt",
+              "api": "openai-completions",
               "provider": "",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64
         }
@@ -793,76 +815,60 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
+              "role": "user",
               "content": [
                 {
-                  "text": "think hard"
+                  "data": "undefined",
+                  "mimeType": "undefined"
                 }
               ],
-              "role": "user",
               "timestamp": 0
             },
             {
-              "api": "openai-responses",
+              "role": "assistant",
               "content": [
                 {
-                  "text": "s",
-                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_1\"}",
-                  "type": "text"
-                },
-                {
-                  "text": "s",
-                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_1_1\"}",
-                  "type": "text"
-                },
-                {
+                  "type": "text",
                   "text": "done",
-                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_1_2\"}",
-                  "type": "text"
+                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_1\"}"
                 }
               ],
-              "model": "mock-gpt",
+              "api": "openai-responses",
               "provider": "openai",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64,
           "sessionId": "d-s1"
         }
       },
       "diffs": [
-        "$.context.messages[1].content[0].text: unexpected \"s\"",
-        "$.context.messages[1].content[0].textSignature: unexpected \"{\\\"v\\\":1,\\\"id\\\":\\\"msg_pi_1\\\"}\"",
-        "$.context.messages[1].content[0].type: expected \"thinking\", got \"text\"",
-        "$.context.messages[1].content[0].thinking: missing (expected \"s\")",
-        "$.context.messages[1].content[0].thinkingSignature: missing (expected \"{\\\"id\\\":\\\"rs_1\\\",\\\"summary\\\":[{\\\"text\\\":\\\"s\\\",\\\"type\\\":\\\"summary_text\\\"}],\\\"type\\\":\\\"reasoning\\\"}\")",
-        "$.context.messages[1].content[1].text: unexpected \"s\"",
-        "$.context.messages[1].content[1].textSignature: unexpected \"{\\\"v\\\":1,\\\"id\\\":\\\"msg_pi_1_1\\\"}\"",
-        "$.context.messages[1].content[1].type: expected \"thinking\", got \"text\"",
-        "$.context.messages[1].content[1].thinking: missing (expected \"s\")",
-        "$.context.messages[1].content[1].thinkingSignature: missing (expected \"{\\\"id\\\":\\\"rs_1\\\",\\\"summary\\\":[{\\\"text\\\":\\\"s\\\",\\\"type\\\":\\\"summary_text\\\"}],\\\"type\\\":\\\"reasoning\\\"}\")",
-        "$.context.messages[1].content[2].textSignature: expected \"{\\\"v\\\":1,\\\"id\\\":\\\"msg_pi_1\\\"}\", got \"{\\\"v\\\":1,\\\"id\\\":\\\"msg_pi_1_2\\\"}\""
+        "$.context.messages[0].content[0].data: unexpected \"undefined\"",
+        "$.context.messages[0].content[0].mimeType: unexpected \"undefined\"",
+        "$.context.messages[0].content[0].text: missing (expected \"think hard\")",
+        "$.context.messages[1].content: expected length 3, got 1"
       ],
       "ok": false
     },
@@ -933,60 +939,60 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "api": "openai-responses",
+              "role": "assistant",
               "content": [
                 {
+                  "type": "text",
                   "text": "",
-                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_0\"}",
-                  "type": "text"
+                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_0\"}"
                 },
                 {
-                  "arguments": {
-                    "value": "hello"
-                  },
+                  "type": "toolCall",
                   "id": "call-1_fc_item",
                   "name": "echo",
-                  "type": "toolCall"
+                  "arguments": {
+                    "value": "hello"
+                  }
                 }
               ],
-              "model": "mock-gpt",
+              "api": "openai-responses",
               "provider": "openai",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
+              "role": "toolResult",
+              "toolCallId": "call-1_fc_item",
+              "toolName": "echo",
               "content": [
                 {
-                  "text": "ok"
+                  "text": "(no tool output)"
                 }
               ],
               "isError": false,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call-1_fc_item",
-              "toolName": "echo"
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64,
           "sessionId": "d-s1"
@@ -996,7 +1002,8 @@
         "$.context.messages[0].content[0].textSignature: expected \"{\\\"v\\\":1,\\\"id\\\":\\\"phase-id\\\",\\\"phase\\\":\\\"commentary\\\"}\", got \"{\\\"v\\\":1,\\\"id\\\":\\\"msg_pi_0\\\"}\"",
         "$.context.messages[0].content[1].id: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
         "$.context.messages[0].content[1].namespace: missing (expected \"space\")",
-        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\""
+        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
+        "$.context.messages[1].content[0].text: expected \"ok\", got \"(no tool output)\""
       ],
       "ok": false
     },
@@ -1070,63 +1077,55 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "api": "openai-responses",
+              "role": "assistant",
               "content": [
                 {
-                  "arguments": {
-                    "value": "hello"
-                  },
+                  "type": "toolCall",
                   "id": "call-1_fc_item",
                   "name": "echo",
-                  "type": "toolCall"
+                  "arguments": {
+                    "value": "hello"
+                  }
                 }
               ],
-              "model": "mock-gpt",
+              "api": "openai-responses",
               "provider": "openai",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
+              "role": "toolResult",
+              "toolCallId": "call-1_fc_item",
+              "toolName": "echo",
               "content": [
                 {
-                  "text": "middle"
-                },
-                {
-                  "data": "AQID",
-                  "mimeType": "image/png"
-                },
-                {
-                  "data": "AQID",
-                  "mimeType": "image/png"
+                  "text": "(no tool output)"
                 }
               ],
               "isError": false,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call-1_fc_item",
-              "toolName": "echo"
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64,
           "sessionId": "d-s1"
@@ -1135,7 +1134,8 @@
       "diffs": [
         "$.context.messages[0].content[0].id: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
         "$.context.messages[0].content[0].namespace: missing (expected \"space\")",
-        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\""
+        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
+        "$.context.messages[1].content: expected length 3, got 1"
       ],
       "ok": false
     },
@@ -1202,56 +1202,55 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "api": "openai-responses",
+              "role": "assistant",
               "content": [
                 {
-                  "arguments": {
-                    "value": "hello"
-                  },
+                  "type": "toolCall",
                   "id": "call-1_fc_item",
                   "name": "echo",
-                  "type": "toolCall"
+                  "arguments": {
+                    "value": "hello"
+                  }
                 }
               ],
-              "model": "mock-gpt",
+              "api": "openai-responses",
               "provider": "openai",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
+              "role": "toolResult",
+              "toolCallId": "call-1_fc_item",
+              "toolName": "echo",
               "content": [
                 {
-                  "data": "AQID",
-                  "mimeType": "image/png"
+                  "text": "(no tool output)"
                 }
               ],
               "isError": false,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call-1_fc_item",
-              "toolName": "echo"
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64,
           "sessionId": "d-s1"
@@ -1260,7 +1259,10 @@
       "diffs": [
         "$.context.messages[0].content[0].id: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
         "$.context.messages[0].content[0].namespace: missing (expected \"space\")",
-        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\""
+        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
+        "$.context.messages[1].content[0].text: unexpected \"(no tool output)\"",
+        "$.context.messages[1].content[0].data: missing (expected \"AQID\")",
+        "$.context.messages[1].content[0].mimeType: missing (expected \"image/png\")"
       ],
       "ok": false
     },
@@ -1528,16 +1530,16 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "content": " aagax",
               "role": "system",
-              "timestamp": 0,
+              "content": " aagax",
               "toolsAdded": [
                 {
-                  "description": "Echo the given text.",
                   "name": "echo",
+                  "description": "Echo the given text.",
                   "parameters": {
                     "properties": {
                       "text": {
@@ -1550,234 +1552,254 @@
                     "type": "object"
                   }
                 }
-              ]
-            },
-            {
-              "content": [
-                {
-                  "text": " "
-                }
               ],
-              "role": "user",
               "timestamp": 0
             },
             {
+              "role": "user",
               "content": [
                 {
-                  "text": "h  oo2k 2y  "
+                  "data": "undefined",
+                  "mimeType": "undefined"
                 }
               ],
-              "role": "user",
               "timestamp": 0
             },
             {
-              "api": "openai-responses",
+              "role": "user",
               "content": [
                 {
+                  "data": "undefined",
+                  "mimeType": "undefined"
+                }
+              ],
+              "timestamp": 0
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "text",
                   "text": " hpnhh n ",
-                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_2\"}",
-                  "type": "text"
+                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_2\"}"
                 },
                 {
+                  "type": "text",
                   "text": "hlok",
-                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_2_1\"}",
-                  "type": "text"
+                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_2_1\"}"
                 },
                 {
-                  "arguments": {
-                    "a": 1
-                  },
+                  "type": "toolCall",
                   "id": "call_1",
                   "name": "tool1",
-                  "type": "toolCall"
+                  "arguments": {
+                    "a": 1
+                  }
                 }
               ],
-              "model": "mock-gpt",
+              "api": "openai-responses",
               "provider": "openai",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
+              "role": "toolResult",
+              "toolCallId": "call_1",
+              "toolName": "tool1",
               "content": [
                 {
                   "text": "(no tool output)"
                 }
               ],
               "isError": false,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call_1",
-              "toolName": "tool1"
+              "timestamp": 0
             },
             {
-              "api": "openai-responses",
+              "role": "assistant",
               "content": [
                 {
+                  "type": "text",
                   "text": "ch hco  ",
-                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_4\"}",
-                  "type": "text"
+                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_4\"}"
                 },
                 {
-                  "arguments": {
-                    "a": 2
-                  },
+                  "type": "toolCall",
                   "id": "call_2_x",
                   "name": "tool2",
-                  "type": "toolCall"
+                  "arguments": {
+                    "a": 2
+                  }
                 }
               ],
-              "model": "mock-gpt",
+              "api": "openai-responses",
               "provider": "openai",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
+              "role": "toolResult",
+              "toolCallId": "call_2_x",
+              "toolName": "tool2",
               "content": [
                 {
                   "text": "(no tool output)"
                 }
               ],
               "isError": false,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call_2_x",
-              "toolName": "tool2"
+              "timestamp": 0
             },
             {
-              "api": "openai-responses",
+              "role": "assistant",
               "content": [
                 {
+                  "type": "text",
                   "text": "  2o",
-                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_6\"}",
-                  "type": "text"
+                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_6\"}"
                 },
                 {
+                  "type": "text",
                   "text": "x axytkd",
-                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_6_1\"}",
-                  "type": "text"
+                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_6_1\"}"
                 },
                 {
+                  "type": "text",
                   "text": " mo",
-                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_6_2\"}",
-                  "type": "text"
+                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_6_2\"}"
                 }
               ],
-              "model": "mock-gpt",
-              "provider": "openai",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
-              "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
-                "input": 0,
-                "output": 0,
-                "totalTokens": 0
-              }
-            },
-            {
-              "content": [
-                {
-                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  "
-                }
-              ],
-              "role": "user",
-              "timestamp": 0
-            },
-            {
-              "content": [
-                {
-                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  "
-                },
-                {
-                  "text": ""
-                }
-              ],
-              "role": "user",
-              "timestamp": 0
-            },
-            {
               "api": "openai-responses",
-              "content": [
-                {
-                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  ",
-                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_9\"}",
-                  "type": "text"
-                },
-                {
-                  "text": "",
-                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_9_1\"}",
-                  "type": "text"
-                }
-              ],
-              "model": "mock-gpt",
               "provider": "openai",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "data": "undefined",
+                  "mimeType": "undefined"
+                }
+              ],
+              "timestamp": 0
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "data": "undefined",
+                  "mimeType": "undefined"
+                },
+                {
+                  "data": "undefined",
+                  "mimeType": "undefined"
+                }
+              ],
+              "timestamp": 0
+            },
+            {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  ",
+                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_9\"}"
+                },
+                {
+                  "type": "text",
+                  "text": "",
+                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_9_1\"}"
+                }
+              ],
+              "api": "openai-responses",
+              "provider": "openai",
+              "model": "mock-gpt",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64,
           "sessionId": "d-s1"
         }
       },
       "diffs": [
+        "$.context.messages[1].content[0].data: unexpected \"undefined\"",
+        "$.context.messages[1].content[0].mimeType: unexpected \"undefined\"",
+        "$.context.messages[1].content[0].text: missing (expected \" \")",
+        "$.context.messages[2].content[0].data: unexpected \"undefined\"",
+        "$.context.messages[2].content[0].mimeType: unexpected \"undefined\"",
+        "$.context.messages[2].content[0].text: missing (expected \"h  oo2k 2y  \")",
         "$.context.messages[5].content[1].id: expected \"call_2 x\", got \"call_2_x\"",
-        "$.context.messages[6].toolCallId: expected \"call_2 x\", got \"call_2_x\""
+        "$.context.messages[6].toolCallId: expected \"call_2 x\", got \"call_2_x\"",
+        "$.context.messages[8].content[0].data: unexpected \"undefined\"",
+        "$.context.messages[8].content[0].mimeType: unexpected \"undefined\"",
+        "$.context.messages[8].content[0].text: missing (expected \"中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\\u0000\\u0001\\b\\f\\n\\r\\t\\u001f  \")",
+        "$.context.messages[9].content[0].data: unexpected \"undefined\"",
+        "$.context.messages[9].content[0].mimeType: unexpected \"undefined\"",
+        "$.context.messages[9].content[0].text: missing (expected \"中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\\u0000\\u0001\\b\\f\\n\\r\\t\\u001f  \")",
+        "$.context.messages[9].content[1].data: unexpected \"undefined\"",
+        "$.context.messages[9].content[1].mimeType: unexpected \"undefined\"",
+        "$.context.messages[9].content[1].text: missing (expected \"\")"
       ],
       "ok": false
     },
@@ -5234,16 +5256,16 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "content": "ieiogtyd ",
               "role": "system",
-              "timestamp": 0,
+              "content": "ieiogtyd ",
               "toolsAdded": [
                 {
-                  "description": "Echo the given text.",
                   "name": "echo",
+                  "description": "Echo the given text.",
                   "parameters": {
                     "properties": {
                       "text": {
@@ -5256,70 +5278,75 @@
                     "type": "object"
                   }
                 }
-              ]
-            },
-            {
-              "content": [
-                {
-                  "text": "xy"
-                }
               ],
-              "role": "user",
               "timestamp": 0
             },
             {
-              "api": "openai-responses",
+              "role": "user",
               "content": [
                 {
-                  "arguments": {
-                    "a": 1
-                  },
-                  "id": "call_1_fc_h92",
-                  "name": "tool1",
-                  "type": "toolCall"
+                  "data": "undefined",
+                  "mimeType": "undefined"
                 }
               ],
-              "model": "mock-gpt",
-              "provider": "openai",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
-              "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
-                "input": 0,
-                "output": 0,
-                "totalTokens": 0
-              }
+              "timestamp": 0
             },
             {
+              "role": "assistant",
               "content": [
                 {
-                  "text": "e  thbhienxo"
+                  "type": "toolCall",
+                  "id": "call_1_fc_h92",
+                  "name": "tool1",
+                  "arguments": {
+                    "a": 1
+                  }
+                }
+              ],
+              "api": "openai-responses",
+              "provider": "openai",
+              "model": "mock-gpt",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
+            },
+            {
+              "role": "toolResult",
+              "toolCallId": "call_1_fc_h92",
+              "toolName": "tool1",
+              "content": [
+                {
+                  "text": "(no tool output)"
                 }
               ],
               "isError": false,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call_1_fc_h92",
-              "toolName": "tool1"
+              "timestamp": 0
             },
             {
-              "api": "openai-responses",
+              "role": "assistant",
               "content": [
                 {
+                  "type": "text",
                   "text": "aih tlacxm",
-                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_3\"}",
-                  "type": "text"
+                  "textSignature": "{\"v\":1,\"id\":\"msg_pi_3\"}"
                 },
                 {
+                  "type": "toolCall",
+                  "id": "expanded_8_0",
+                  "name": "expanded0",
                   "arguments": {
                     "child": {
                       "child": {
@@ -6135,12 +6162,12 @@
                         "text": "8-7-23🚀"
                       }
                     ]
-                  },
-                  "id": "expanded_8_0",
-                  "name": "expanded0",
-                  "type": "toolCall"
+                  }
                 },
                 {
+                  "type": "toolCall",
+                  "id": "expanded_8_1",
+                  "name": "expanded1",
                   "arguments": {
                     "child": {
                       "child": {
@@ -6956,12 +6983,12 @@
                         "text": "9-7-23🚀"
                       }
                     ]
-                  },
-                  "id": "expanded_8_1",
-                  "name": "expanded1",
-                  "type": "toolCall"
+                  }
                 },
                 {
+                  "type": "toolCall",
+                  "id": "expanded_8_2",
+                  "name": "expanded2",
                   "arguments": {
                     "child": {
                       "child": {
@@ -7777,12 +7804,12 @@
                         "text": "10-7-23🚀"
                       }
                     ]
-                  },
-                  "id": "expanded_8_2",
-                  "name": "expanded2",
-                  "type": "toolCall"
+                  }
                 },
                 {
+                  "type": "toolCall",
+                  "id": "expanded_8_3",
+                  "name": "expanded3",
                   "arguments": {
                     "child": {
                       "child": {
@@ -8598,91 +8625,95 @@
                         "text": "11-7-23🚀"
                       }
                     ]
-                  },
-                  "id": "expanded_8_3",
-                  "name": "expanded3",
-                  "type": "toolCall"
+                  }
                 }
               ],
-              "model": "mock-gpt",
+              "api": "openai-responses",
               "provider": "openai",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
-              "content": [
-                {
-                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  \n(tool image omitted: model does not support images)\ntail"
-                }
-              ],
-              "isError": false,
               "role": "toolResult",
-              "timestamp": 0,
               "toolCallId": "expanded_8_0",
-              "toolName": "expanded0"
-            },
-            {
+              "toolName": "expanded0",
               "content": [
                 {
-                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  \n(tool image omitted: model does not support images)\ntail"
+                  "text": "(no tool output)"
                 }
               ],
               "isError": false,
+              "timestamp": 0
+            },
+            {
               "role": "toolResult",
-              "timestamp": 0,
               "toolCallId": "expanded_8_1",
-              "toolName": "expanded1"
-            },
-            {
+              "toolName": "expanded1",
               "content": [
                 {
-                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  \n(tool image omitted: model does not support images)\ntail"
+                  "text": "(no tool output)"
                 }
               ],
               "isError": false,
+              "timestamp": 0
+            },
+            {
               "role": "toolResult",
-              "timestamp": 0,
               "toolCallId": "expanded_8_2",
-              "toolName": "expanded2"
-            },
-            {
+              "toolName": "expanded2",
               "content": [
                 {
-                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  \n(tool image omitted: model does not support images)\ntail"
+                  "text": "(no tool output)"
                 }
               ],
               "isError": false,
+              "timestamp": 0
+            },
+            {
               "role": "toolResult",
-              "timestamp": 0,
               "toolCallId": "expanded_8_3",
-              "toolName": "expanded3"
+              "toolName": "expanded3",
+              "content": [
+                {
+                  "text": "(no tool output)"
+                }
+              ],
+              "isError": false,
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64,
           "sessionId": "d-s1"
         }
       },
       "diffs": [
+        "$.context.messages[1].content[0].data: unexpected \"undefined\"",
+        "$.context.messages[1].content[0].mimeType: unexpected \"undefined\"",
+        "$.context.messages[1].content[0].text: missing (expected \"xy\")",
         "$.context.messages[2].content[0].id: expected \"call_1|fc_h92\", got \"call_1_fc_h92\"",
-        "$.context.messages[3].toolCallId: expected \"call_1|fc_h92\", got \"call_1_fc_h92\""
+        "$.context.messages[3].toolCallId: expected \"call_1|fc_h92\", got \"call_1_fc_h92\"",
+        "$.context.messages[3].content[0].text: expected \"e  thbhienxo\", got \"(no tool output)\"",
+        "$.context.messages[5].content[0].text: expected \"中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\\u0000\\u0001\\b\\f\\n\\r\\t\\u001f  \\n(tool image omitted: model does not support images)\\ntail\", got \"(no tool output)\"",
+        "$.context.messages[6].content[0].text: expected \"中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\\u0000\\u0001\\b\\f\\n\\r\\t\\u001f  \\n(tool image omitted: model does not support images)\\ntail\", got \"(no tool output)\"",
+        "$.context.messages[7].content[0].text: expected \"中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\\u0000\\u0001\\b\\f\\n\\r\\t\\u001f  \\n(tool image omitted: model does not support images)\\ntail\", got \"(no tool output)\"",
+        "$.context.messages[8].content[0].text: expected \"中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\\u0000\\u0001\\b\\f\\n\\r\\t\\u001f  \\n(tool image omitted: model does not support images)\\ntail\", got \"(no tool output)\""
       ],
       "ok": false
     },
@@ -8745,65 +8776,50 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "content": "think hard",
               "role": "user",
+              "content": "think hard",
               "timestamp": 0
             },
             {
-              "api": "anthropic-messages",
+              "role": "assistant",
               "content": [
                 {
-                  "text": "first thought",
-                  "type": "text"
-                },
-                {
-                  "text": "second thought",
-                  "type": "text"
-                },
-                {
-                  "text": "done",
-                  "type": "text"
+                  "type": "text",
+                  "text": "done"
                 }
               ],
-              "model": "mock-gpt",
+              "api": "anthropic-messages",
               "provider": "anthropic",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64
         }
       },
       "diffs": [
-        "$.context.messages[1].content[0].text: unexpected \"first thought\"",
-        "$.context.messages[1].content[0].type: expected \"thinking\", got \"text\"",
-        "$.context.messages[1].content[0].thinking: missing (expected \"first thought\")",
-        "$.context.messages[1].content[0].thinkingSignature: missing (expected \"reasoning_content\")",
-        "$.context.messages[1].content[1].text: unexpected \"second thought\"",
-        "$.context.messages[1].content[1].type: expected \"thinking\", got \"text\"",
-        "$.context.messages[1].content[1].thinking: missing (expected \"second thought\")",
-        "$.context.messages[1].content[1].thinkingSignature: missing (expected \"reasoning_content\")"
+        "$.context.messages[1].content: expected length 3, got 1"
       ],
       "ok": false
     },
@@ -8867,55 +8883,55 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "api": "anthropic-messages",
+              "role": "assistant",
               "content": [
                 {
-                  "arguments": {
-                    "value": "hello"
-                  },
+                  "type": "toolCall",
                   "id": "call-1_fc_item",
                   "name": "echo",
-                  "type": "toolCall"
+                  "arguments": {
+                    "value": "hello"
+                  }
                 }
               ],
-              "model": "mock-gpt",
+              "api": "anthropic-messages",
               "provider": "anthropic",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
+              "role": "toolResult",
+              "toolCallId": "call-1_fc_item",
+              "toolName": "echo",
               "content": [
                 {
                   "text": "ok"
                 }
               ],
               "isError": true,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call-1_fc_item",
-              "toolName": "echo"
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64
         }
@@ -8986,55 +9002,55 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "api": "anthropic-messages",
+              "role": "assistant",
               "content": [
                 {
-                  "arguments": {
-                    "value": "hello"
-                  },
+                  "type": "toolCall",
                   "id": "call-1_fc_item",
                   "name": "echo",
-                  "type": "toolCall"
+                  "arguments": {
+                    "value": "hello"
+                  }
                 }
               ],
-              "model": "mock-gpt",
+              "api": "anthropic-messages",
               "provider": "anthropic",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
+              "role": "toolResult",
+              "toolCallId": "call-1_fc_item",
+              "toolName": "echo",
               "content": [
                 {
                   "text": "[image omitted: error tool results cannot contain images]\nmiddle\n[image omitted: error tool results cannot contain images]"
                 }
               ],
               "isError": true,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call-1_fc_item",
-              "toolName": "echo"
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64
         }
@@ -9109,66 +9125,63 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "api": "anthropic-messages",
+              "role": "assistant",
               "content": [
                 {
-                  "arguments": {
-                    "value": "hello"
-                  },
+                  "type": "toolCall",
                   "id": "call-1_fc_item",
                   "name": "echo",
-                  "type": "toolCall"
+                  "arguments": {
+                    "value": "hello"
+                  }
                 }
               ],
-              "model": "mock-gpt",
+              "api": "anthropic-messages",
               "provider": "anthropic",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
+              "role": "toolResult",
+              "toolCallId": "call-1_fc_item",
+              "toolName": "echo",
               "content": [
                 {
-                  "text": "(see attached image)"
-                },
-                {
-                  "data": "AQID",
-                  "mimeType": "image/png"
+                  "text": "(see attached image)\n"
                 }
               ],
               "isError": false,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call-1_fc_item",
-              "toolName": "echo"
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64
         }
       },
       "diffs": [
         "$.context.messages[0].content[0].id: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
-        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\""
+        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
+        "$.context.messages[1].content: expected length 2, got 1"
       ],
       "ok": false
     },
@@ -9176,7 +9189,7 @@
       "property": "P1",
       "api": "anthropic-messages",
       "name": "w06-surrogate-order",
-      "phase": "compare",
+      "phase": "v1.4-rejected-wire",
       "expected": {
         "context": {
           "messages": [
@@ -9288,7 +9301,8 @@
       "diffs": [
         "$.context.messages[2].content: expected length 2, got 1"
       ],
-      "ok": false
+      "ok": false,
+      "note": "pi-ai 1.4.0 strips the lone-surrogate image data but still emits the image block with a bare {\"type\":\"base64\"} source (no media_type/data); the mock correctly rejects that as invalid wire (400). Regeneration of this counterexample is deferred until upstream clarifies malformed-surrogate image handling; the v1.2.0 actual is kept below for history."
     },
     {
       "property": "P1",
@@ -12860,17 +12874,18 @@
         }
       },
       "actual": {
+        "model": "mock-gpt",
         "context": {
           "messages": [
             {
-              "content": "oga nyb",
               "role": "system",
-              "timestamp": 0,
+              "content": "oga nyb",
               "toolsAdded": [
                 {
-                  "description": "Echo the given text.",
                   "name": "echo",
+                  "description": "Echo the given text.",
                   "parameters": {
+                    "type": "object",
                     "properties": {
                       "text": {
                         "type": "string"
@@ -12878,190 +12893,161 @@
                     },
                     "required": [
                       "text"
-                    ],
-                    "type": "object"
+                    ]
                   }
                 }
-              ]
-            },
-            {
-              "content": "g in2io22xltl2d2",
-              "role": "user",
+              ],
               "timestamp": 0
             },
             {
-              "api": "anthropic-messages",
-              "content": [
-                {
-                  "arguments": {
-                    "a": 1
-                  },
-                  "id": "call_1_x",
-                  "name": "tool1",
-                  "type": "toolCall"
-                },
-                {
-                  "text": " xgnt b ",
-                  "type": "text"
-                },
-                {
-                  "text": "aly ka moam2",
-                  "type": "text"
-                }
-              ],
-              "model": "mock-gpt",
-              "provider": "anthropic",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
-              "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
-                "input": 0,
-                "output": 0,
-                "totalTokens": 0
-              }
+              "role": "user",
+              "content": "g in2io22xltl2d2",
+              "timestamp": 0
             },
             {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call_1_x",
+                  "name": "tool1",
+                  "arguments": {
+                    "a": 1
+                  }
+                },
+                {
+                  "type": "text",
+                  "text": " xgnt b "
+                }
+              ],
+              "api": "anthropic-messages",
+              "provider": "anthropic",
+              "model": "mock-gpt",
+              "usage": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
+            },
+            {
+              "role": "toolResult",
+              "toolCallId": "call_1_x",
+              "toolName": "tool1",
               "content": [
                 {
                   "text": "tx xxxo"
                 }
               ],
               "isError": false,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call_1_x",
-              "toolName": "tool1"
+              "timestamp": 0
             },
             {
-              "api": "anthropic-messages",
+              "role": "assistant",
               "content": [
                 {
-                  "arguments": {
-                    "a": 2
-                  },
+                  "type": "toolCall",
                   "id": "call_2_fc_h4",
                   "name": "tool2",
-                  "type": "toolCall"
+                  "arguments": {
+                    "a": 2
+                  }
                 },
                 {
-                  "arguments": {
-                    "a": 3
-                  },
+                  "type": "toolCall",
                   "id": "call_3",
                   "name": "tool3",
-                  "type": "toolCall"
+                  "arguments": {
+                    "a": 3
+                  }
                 },
                 {
-                  "arguments": {
-                    "a": 4
-                  },
+                  "type": "toolCall",
                   "id": "call_4_x",
                   "name": "tool4",
-                  "type": "toolCall"
+                  "arguments": {
+                    "a": 4
+                  }
                 }
               ],
-              "model": "mock-gpt",
+              "api": "anthropic-messages",
               "provider": "anthropic",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
+              "role": "toolResult",
+              "toolCallId": "call_2_fc_h4",
+              "toolName": "tool2",
               "content": [
                 {
                   "text": ""
                 }
               ],
               "isError": false,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call_2_fc_h4",
-              "toolName": "tool2"
+              "timestamp": 0
             },
             {
+              "role": "toolResult",
+              "toolCallId": "call_3",
+              "toolName": "tool3",
               "content": [
                 {
                   "text": "iexxgxai"
                 }
               ],
               "isError": false,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call_3",
-              "toolName": "tool3"
+              "timestamp": 0
             },
             {
+              "role": "toolResult",
+              "toolCallId": "call_4_x",
+              "toolName": "tool4",
               "content": [
                 {
                   "text": ""
                 }
               ],
               "isError": false,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "call_4_x",
-              "toolName": "tool4"
-            },
-            {
-              "api": "anthropic-messages",
-              "content": [
-                {
-                  "text": "cxkmxx ",
-                  "type": "text"
-                }
-              ],
-              "model": "mock-gpt",
-              "provider": "anthropic",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
-              "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
-                "input": 0,
-                "output": 0,
-                "totalTokens": 0
-              }
-            },
-            {
-              "content": "oxohe k",
-              "role": "user",
               "timestamp": 0
             },
             {
-              "api": "anthropic-messages",
+              "role": "user",
+              "content": "oxohe k",
+              "timestamp": 0
+            },
+            {
+              "role": "assistant",
               "content": [
                 {
+                  "type": "toolCall",
+                  "id": "expanded_8_0",
+                  "name": "expanded0",
                   "arguments": {
                     "child": {
                       "child": {
@@ -13877,12 +13863,12 @@
                         "text": "8-7-23🚀"
                       }
                     ]
-                  },
-                  "id": "expanded_8_0",
-                  "name": "expanded0",
-                  "type": "toolCall"
+                  }
                 },
                 {
+                  "type": "toolCall",
+                  "id": "expanded_8_1",
+                  "name": "expanded1",
                   "arguments": {
                     "child": {
                       "child": {
@@ -14698,12 +14684,12 @@
                         "text": "9-7-23🚀"
                       }
                     ]
-                  },
-                  "id": "expanded_8_1",
-                  "name": "expanded1",
-                  "type": "toolCall"
+                  }
                 },
                 {
+                  "type": "toolCall",
+                  "id": "expanded_8_2",
+                  "name": "expanded2",
                   "arguments": {
                     "child": {
                       "child": {
@@ -15519,12 +15505,12 @@
                         "text": "10-7-23🚀"
                       }
                     ]
-                  },
-                  "id": "expanded_8_2",
-                  "name": "expanded2",
-                  "type": "toolCall"
+                  }
                 },
                 {
+                  "type": "toolCall",
+                  "id": "expanded_8_3",
+                  "name": "expanded3",
                   "arguments": {
                     "child": {
                       "child": {
@@ -16340,102 +16326,85 @@
                         "text": "11-7-23🚀"
                       }
                     ]
-                  },
-                  "id": "expanded_8_3",
-                  "name": "expanded3",
-                  "type": "toolCall"
+                  }
                 }
               ],
-              "model": "mock-gpt",
+              "api": "anthropic-messages",
               "provider": "anthropic",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "mock-gpt",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
-              "content": [
-                {
-                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  \n(tool image omitted: model does not support images)\ntail"
-                }
-              ],
-              "isError": false,
               "role": "toolResult",
-              "timestamp": 0,
               "toolCallId": "expanded_8_0",
-              "toolName": "expanded0"
-            },
-            {
-              "content": [
-                {
-                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  \n(tool image omitted: model does not support images)\ntail"
-                }
-              ],
-              "isError": true,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "expanded_8_1",
-              "toolName": "expanded1"
-            },
-            {
+              "toolName": "expanded0",
               "content": [
                 {
                   "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  \n(tool image omitted: model does not support images)\ntail"
                 }
               ],
               "isError": false,
-              "role": "toolResult",
-              "timestamp": 0,
-              "toolCallId": "expanded_8_2",
-              "toolName": "expanded2"
+              "timestamp": 0
             },
             {
+              "role": "toolResult",
+              "toolCallId": "expanded_8_1",
+              "toolName": "expanded1",
               "content": [
                 {
                   "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  \n(tool image omitted: model does not support images)\ntail"
                 }
               ],
               "isError": true,
+              "timestamp": 0
+            },
+            {
               "role": "toolResult",
-              "timestamp": 0,
+              "toolCallId": "expanded_8_2",
+              "toolName": "expanded2",
+              "content": [
+                {
+                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  \n(tool image omitted: model does not support images)\ntail"
+                }
+              ],
+              "isError": false,
+              "timestamp": 0
+            },
+            {
+              "role": "toolResult",
               "toolCallId": "expanded_8_3",
-              "toolName": "expanded3"
+              "toolName": "expanded3",
+              "content": [
+                {
+                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  \n(tool image omitted: model does not support images)\ntail"
+                }
+              ],
+              "isError": true,
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gpt",
         "options": {
           "maxTokens": 64
         }
       },
       "diffs": [
-        "$.context.messages[2].content[0].id: expected \"call_1 x\", got \"call_1_x\"",
-        "$.context.messages[2].content[2].text: unexpected \"aly ka moam2\"",
-        "$.context.messages[2].content[2].type: expected \"thinking\", got \"text\"",
-        "$.context.messages[2].content[2].thinking: missing (expected \"aly ka moam2\")",
-        "$.context.messages[2].content[2].thinkingSignature: missing (expected \"c2lnbmF0dXJl\")",
-        "$.context.messages[3].toolCallId: expected \"call_1 x\", got \"call_1_x\"",
-        "$.context.messages[4].content[0].id: expected \"call_2|fc_h4\", got \"call_2_fc_h4\"",
-        "$.context.messages[4].content[2].id: expected \"call_4 x\", got \"call_4_x\"",
-        "$.context.messages[5].toolCallId: expected \"call_2|fc_h4\", got \"call_2_fc_h4\"",
-        "$.context.messages[7].toolCallId: expected \"call_4 x\", got \"call_4_x\"",
-        "$.context.messages[8].content[0].text: unexpected \"cxkmxx \"",
-        "$.context.messages[8].content[0].type: expected \"thinking\", got \"text\"",
-        "$.context.messages[8].content[0].thinking: missing (expected \"cxkmxx \")",
-        "$.context.messages[8].content[0].thinkingSignature: missing (expected \"c2lnbmF0dXJl\")"
+        "$.context.messages: expected length 15, got 14"
       ],
       "ok": false
     },
@@ -16496,63 +16465,50 @@
         }
       },
       "actual": {
+        "model": "mock-gemini",
         "context": {
           "messages": [
             {
-              "content": "think hard",
               "role": "user",
+              "content": "think hard",
               "timestamp": 0
             },
             {
-              "api": "google-generative-ai",
+              "role": "assistant",
               "content": [
                 {
-                  "text": "first thought",
-                  "type": "text"
-                },
-                {
-                  "text": "second thought",
-                  "type": "text"
-                },
-                {
-                  "text": "done",
-                  "type": "text"
+                  "type": "text",
+                  "text": "done"
                 }
               ],
-              "model": "",
+              "api": "google-generative-ai",
               "provider": "",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gemini",
         "options": {
           "maxTokens": 64
         }
       },
       "diffs": [
-        "$.context.messages[1].content[0].text: unexpected \"first thought\"",
-        "$.context.messages[1].content[0].type: expected \"thinking\", got \"text\"",
-        "$.context.messages[1].content[0].thinking: missing (expected \"first thought\")",
-        "$.context.messages[1].content[1].text: unexpected \"second thought\"",
-        "$.context.messages[1].content[1].type: expected \"thinking\", got \"text\"",
-        "$.context.messages[1].content[1].thinking: missing (expected \"second thought\")"
+        "$.context.messages[1].content: expected length 3, got 1"
       ],
       "ok": false
     },
@@ -16622,61 +16578,58 @@
         }
       },
       "actual": {
+        "model": "mock-gemini",
         "context": {
           "messages": [
             {
-              "api": "google-generative-ai",
+              "role": "assistant",
               "content": [
                 {
-                  "arguments": {
-                    "value": "hello"
-                  },
+                  "type": "toolCall",
                   "id": "echo",
                   "name": "echo",
-                  "type": "toolCall"
+                  "arguments": {
+                    "value": "hello"
+                  }
                 }
               ],
-              "model": "",
+              "api": "google-generative-ai",
               "provider": "",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
-              "content": [
-                {
-                  "text": "ok"
-                }
-              ],
-              "isError": true,
               "role": "toolResult",
-              "timestamp": 0,
               "toolCallId": "echo",
-              "toolName": "echo"
+              "toolName": "echo",
+              "content": [],
+              "isError": true,
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gemini",
         "options": {
           "maxTokens": 64
         }
       },
       "diffs": [
-        "$.context.messages[0].content: expected length 2, got 1"
+        "$.context.messages[0].content: expected length 2, got 1",
+        "$.context.messages[1].content: expected length 1, got 0"
       ],
       "ok": false
     },
@@ -16749,69 +16702,58 @@
         }
       },
       "actual": {
+        "model": "mock-gemini",
         "context": {
           "messages": [
             {
-              "api": "google-generative-ai",
+              "role": "assistant",
               "content": [
                 {
-                  "arguments": {
-                    "value": "hello"
-                  },
+                  "type": "toolCall",
                   "id": "echo",
                   "name": "echo",
-                  "type": "toolCall"
+                  "arguments": {
+                    "value": "hello"
+                  }
                 }
               ],
-              "model": "",
+              "api": "google-generative-ai",
               "provider": "",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
-              "content": [
-                {
-                  "text": "middle"
-                },
-                {
-                  "data": "AQID",
-                  "mimeType": "image/png"
-                },
-                {
-                  "data": "AQID",
-                  "mimeType": "image/png"
-                }
-              ],
-              "isError": true,
               "role": "toolResult",
-              "timestamp": 0,
               "toolCallId": "echo",
-              "toolName": "echo"
+              "toolName": "echo",
+              "content": [],
+              "isError": true,
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gemini",
         "options": {
           "maxTokens": 64
         }
       },
       "diffs": [
-        "$.context.messages[0].content[0].thoughtSignature: missing (expected \"AQID\")"
+        "$.context.messages[0].content[0].thoughtSignature: missing (expected \"AQID\")",
+        "$.context.messages[1].content: expected length 3, got 0"
       ],
       "ok": false
     },
@@ -16880,65 +16822,58 @@
         }
       },
       "actual": {
+        "model": "mock-gemini",
         "context": {
           "messages": [
             {
-              "api": "google-generative-ai",
+              "role": "assistant",
               "content": [
                 {
-                  "arguments": {
-                    "value": "hello"
-                  },
+                  "type": "toolCall",
                   "id": "echo",
                   "name": "echo",
-                  "type": "toolCall"
+                  "arguments": {
+                    "value": "hello"
+                  }
                 }
               ],
-              "model": "",
+              "api": "google-generative-ai",
               "provider": "",
-              "role": "assistant",
-              "stopReason": "stop",
-              "timestamp": 0,
+              "model": "",
               "usage": {
-                "cacheRead": 0,
-                "cacheWrite": 0,
-                "cost": {
-                  "cacheRead": 0,
-                  "cacheWrite": 0,
-                  "input": 0,
-                  "output": 0,
-                  "total": 0
-                },
                 "input": 0,
                 "output": 0,
-                "totalTokens": 0
-              }
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "totalTokens": 0,
+                "cost": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheWrite": 0,
+                  "total": 0
+                }
+              },
+              "stopReason": "stop",
+              "timestamp": 0
             },
             {
-              "content": [
-                {
-                  "text": "(see attached image)"
-                },
-                {
-                  "data": "AQID",
-                  "mimeType": "image/png"
-                }
-              ],
-              "isError": false,
               "role": "toolResult",
-              "timestamp": 0,
               "toolCallId": "echo",
-              "toolName": "echo"
+              "toolName": "echo",
+              "content": [],
+              "isError": false,
+              "timestamp": 0
             }
           ]
         },
-        "model": "mock-gemini",
         "options": {
           "maxTokens": 64
         }
       },
       "diffs": [
-        "$.context.messages[0].content[0].thoughtSignature: missing (expected \"AQID\")"
+        "$.context.messages[0].content[0].thoughtSignature: missing (expected \"AQID\")",
+        "$.context.messages[1].content: expected length 2, got 0"
       ],
       "ok": false
     },
@@ -16946,7 +16881,7 @@
       "property": "P1",
       "api": "google-generative-ai",
       "name": "w06-surrogate-order",
-      "phase": "compare",
+      "phase": "v1.4-rejected-wire",
       "expected": {
         "context": {
           "messages": [
@@ -17064,7 +16999,9 @@
       "diffs": [
         "$.context.messages[2].content: expected length 2, got 1"
       ],
-      "ok": false
+      "ok": false,
+      "note": "pi-ai 1.4.0 strips the lone-surrogate image data but still emits the image block with a bare {\"type\":\"base64\"} source (no media_type/data); the mock correctly rejects that as invalid wire (400). Regeneration of this counterexample is deferred until upstream clarifies malformed-surrogate image handling; the v1.2.0 actual is kept below for history."
     }
-  ]
+  ],
+  "note-v0.2.0": "pi-ai reference bumped 1.2.0 -> 1.4.0. Compare-phase actual/diffs regenerated with the 1.4.0 reference; 13 rows still fail projection (openai-completions/responses tool-result placeholder + vision rows, google rows incl. system-shape change, responses fuzz shapes) and 3 w06-surrogate-order rows are marked v1.4-rejected-wire (official emits a bare base64 source for lone-surrogate image data; mock correctly 400s). These are the remaining known duality gaps of the 1.4 alignment; tracked for the next pass."
 }

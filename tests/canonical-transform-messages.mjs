@@ -16,10 +16,13 @@ export function transformMessages(messages, model, normalizeId) {
 			const same = message.api === model.api && message.provider === model.provider && message.model === model.id;
 			message.content = message.content.flatMap((block) => {
 				if (block.type === "thinking") {
-					if (block.redacted) return same ? [block] : [];
-					if (same && block.thinkingSignature) return [block];
+					// pi-ai 1.4: cross-source thinking is DROPPED (signatures and
+					// encrypted reasoning are only valid for the producing model;
+					// readable thinking sent as plain text reads as part of the
+					// visible reply), not downgraded to text.
+					if (block.redacted || block.thinkingSignature) return same ? [block] : [];
 					if (!block.thinking.trim()) return [];
-					return same ? [block] : [{ type: "text", text: block.thinking }];
+					return same ? [block] : [];
 				}
 				if (!same && block.type === "text") delete block.textSignature;
 				if (!same && block.type === "toolCall") {

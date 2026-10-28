@@ -76,21 +76,34 @@ pub(super) fn decode_user(
 		Some(WireContent::Blocks(blocks)) => blocks,
 		None => return Ok(()),
 	};
-	if blocks.iter().all(|b| matches!(b, WireBlock::ToolResult { .. })) {
-		for block in blocks {
-			if let WireBlock::ToolResult {
+	// Mixed user content is legal wire since pi-ai 1.4 (#10794): an error
+	// tool result's images are split out, so the user message is
+	// [...tool_results, caption text, images...]. Decode order-preserving:
+	// consecutive tool results become ToolResultMessages, consecutive
+	// text/image blocks become one UserMessage.
+	let mut user_blocks: Vec<UserBlock> = Vec::new();
+	for block in blocks {
+		match block {
+			WireBlock::ToolResult {
 				tool_use_id,
 				content,
 				is_error,
-			} = block
-			{
+			} => {
+				if !user_blocks.is_empty() {
+					out.push(Message::User(UserMessage {
+						content: UserContent::Blocks(std::mem::take(&mut user_blocks)),
+						timestamp: 0,
+					}));
+				}
 				let tool_name = tool_names
 					.get(tool_use_id)
 					.cloned()
 					.ok_or_else(|| format!("tool_result without matching tool_use: {tool_use_id}"))?;
 				let content: Vec<UserBlock> = match content {
 					Some(WireContent::Text(text)) => vec![text_block(text)],
-					Some(WireContent::Blocks(blocks)) => blocks.iter().map(user_block).collect::<Result<_, _>>()?,
+					Some(WireContent::Blocks(blocks)) => {
+						blocks.iter().map(user_block).collect::<Result<_, _>>()?
+					}
 					None => Vec::new(),
 				};
 				out.push(Message::ToolResult(ToolResultMessage {
@@ -103,10 +116,9 @@ pub(super) fn decode_user(
 					duration_ms: None,
 				}));
 			}
+			other => user_blocks.push(user_block(other)?),
 		}
-		return Ok(());
 	}
-	let user_blocks: Vec<UserBlock> = blocks.iter().map(user_block).collect::<Result<_, _>>()?;
 	if !user_blocks.is_empty() {
 		out.push(Message::User(UserMessage {
 			content: UserContent::Blocks(user_blocks),

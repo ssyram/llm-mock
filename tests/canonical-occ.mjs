@@ -75,7 +75,7 @@ export function canonicalOcc(context, model, options) {
 					role: "toolResult",
 					toolCallId: tr.toolCallId,
 					toolName: "", // default compat: `name` not sent (lossy, spec L1)
-					content: [{ text: textResult || (hasImages ? "(see attached image)" : "(no tool output)") }],
+					content: [{ text: textResult.trim() || (hasImages ? "(see attached image)" : "(no tool output)") }],
 					isError: false,
 					timestamp: 0,
 				});

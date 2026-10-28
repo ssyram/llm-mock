@@ -40,11 +40,17 @@ test("Frozen OCC prefix matching also remaps reserved native stop values", () =>
 	assert.equal(predict("openai-completions", { stopReason: "error", errorMessage: "noise Provider finish_reason: length" }).errorMessage, "Provider finish_reason: error");
 	assert.equal(predict("openai-completions", { responseModel: "mock-gpt" }).responseModel, undefined);
 	assert.equal(predict("openai-completions", { responseModel: "foreign" }).responseModel, "foreign");
+	// pi-ai 1.4: a repeated tool-call id still merges into the FIRST block (id
+	// lookup wins on the second delta), but finishBlock now parses strictly:
+	// the concatenated arguments texts fail parseToolCallArguments and the call
+	// lands as {} + argumentsError instead of the v1.2 lenient prefix parse.
 	const duplicate = predict("openai-completions", { content: [
 		{ type: "toolCall", id: "same", name: "first", arguments: { first: 1 } },
 		{ type: "toolCall", id: "same", name: "second", arguments: { second: 2 } },
 	] });
-	assert.deepEqual(duplicate.content, [{ type: "toolCall", id: "same", name: "first", arguments: { first: 1 } }]);
+	assert.deepEqual(duplicate.content, [{ type: "toolCall", id: "same", name: "first",
+		arguments: {},
+		argumentsError: 'Unexpected non-whitespace character after JSON at position 11 (line 1 column 12)\n\nReceived arguments:\n{"first":1}{"second":2}' }]);
 });
 
 test("Frozen Google signatures are last nonempty; raw reason drives outcome, not source stop", () => {

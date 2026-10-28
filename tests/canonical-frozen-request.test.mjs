@@ -29,7 +29,8 @@ test("Frozen G2: sameModel gate, image deduplication and synthesized results", (
 	const model = makeModel("mistral-conversations", 1234);
 	const message = assistant({ ...model, id: "foreign" }, [{ type: "thinking", thinking: "reason" }, { type: "toolCall", id: "x!", name: "echo", arguments: {} }]);
 	const out = transformMessages([message, { role: "user", content: [{ type: "image" }, { type: "image" }] }], model, () => "normalized");
-	assert.deepEqual(out[0].content[0], { type: "text", text: "reason" });
+	// pi-ai 1.4: cross-source thinking is dropped; the first remaining block is the toolCall.
+	assert.deepEqual(out[0].content[0], { type: "toolCall", id: "normalized", name: "echo", arguments: {} });
 	assert.equal(out[1].toolCallId, "normalized");
 	assert.equal(out[1].content[0].text, "No result provided");
 	assert.deepEqual(out[2].content, [{ type: "text", text: "(image omitted: model does not support images)" }]);
@@ -77,15 +78,17 @@ test("Frozen Google G18: all three signed empty/call carriers survive", () => {
 	assert.equal(out[2].id, "echo");
 });
 
-test("Official v1.2.0 Anthropic C08: error images survive in place; image-only has a prefix", () => {
+test("pi-ai 1.4 Anthropic C08: error images split out (#10794); non-error images stay inline", () => {
 	const model = { ...makeModel("anthropic-messages", 1234), input: ["text", "image"] };
 	const call = { type: "toolCall", id: "call", name: "echo", arguments: {} };
 	const image = { type: "image", data: "AQID", mimeType: "image/png" };
 	const result = { role: "toolResult", toolCallId: "call", toolName: "ignored", content: [image, { type: "text", text: "middle" }, image], isError: true };
 	const canonical = (value) => canonicalAm({ messages: [assistant(model, [call]), value] }, model).context.messages[1];
-	assert.deepEqual(canonical(result).content, [{ data: "AQID", mimeType: "image/png" }, { text: "middle" }, { data: "AQID", mimeType: "image/png" }]);
+	// v1.4: error result keeps text placeholders; images follow as a user message.
+	assert.deepEqual(canonical(result).content, [{ text: "(image attached after the tool results)\nmiddle\n(image attached after the tool results)" }]);
 	assert.equal(canonical(result).isError, true);
-	for (const isError of [false, true]) assert.deepEqual(canonical({ ...result, content: [image], isError }).content,
+	// Non-error results keep images inline with the image-only prefix (unchanged).
+	assert.deepEqual(canonical({ ...result, content: [image], isError: false }).content,
 		[{ text: "(see attached image)" }, { data: "AQID", mimeType: "image/png" }]);
 	assert.throws(() => canonicalAm({ messages: [result] }, model), /unpaired/);
 });

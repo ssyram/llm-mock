@@ -46,6 +46,19 @@ export function canonicalAm(context, model, options) {
 			let content = hasImages ? blocks : [{ text: blocks.map((b) => b.text).join("\n") }];
 			if (hasImages && !blocks.some((b) => "text" in b)) content = [{ text: "(see attached image)" }, ...blocks];
 			wire.push({ role: "toolResult", toolCallId: msg.toolCallId, toolName: toolNames.get(msg.toolCallId), content, isError: msg.isError, timestamp: 0 });
+			// pi-ai 1.4 (#10794): images in an ERROR tool result are split out — the
+			// result keeps text placeholders, the caption + images follow as a user
+			// message after the tool results of the turn (single-result mirror of
+			// splitErrorToolResultImages + convertToolResult).
+			if (msg.isError && msg.content.some((b) => b.type === "image")) {
+				const placeholder = "(image attached after the tool results)";
+				const texts = msg.content.map((b) => (b.type === "image" ? placeholder : sanitize(b.text)));
+				wire.at(-1).content = [{ text: texts.join("\n") }];
+				wire.push({ role: "user", content: [
+					{ text: `Images from the error result of tool call ${msg.toolCallId} (${msg.toolName}):` },
+					...msg.content.filter((b) => b.type === "image").map((b) => ({ data: b.data, mimeType: b.mimeType })),
+				], timestamp: 0 });
+			}
 		}
 	}
 	// The final toolResult is a wire user too; never wrap an earlier user past it.

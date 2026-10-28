@@ -88,7 +88,7 @@ export function canonicalOres(context, model, options) {
 				call_id: callId,
 				output: hasImages && model.input.includes("image")
 					? [...(text ? [{ text }] : []), ...msg.content.filter((b) => b.type === "image").map((b) => ({ data: b.data, mimeType: b.mimeType }))]
-					: text || (hasImages ? "(see attached image)" : "(no tool output)"),
+					: text.trim() || (hasImages ? "(see attached image)" : "(no tool output)"),
 			});
 		}
 		if (!isLeadingSystem) msgIndex++;

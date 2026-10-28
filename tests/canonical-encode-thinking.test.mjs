@@ -58,16 +58,23 @@ test("Responses providerFill assigns text signatures at projected indices withou
 	}
 });
 
-test("locked pi TM and Responses/Anthropic/Google converters emit cross-source thinking as plain text", async () => {
+test("pi-ai 1.4: cross-source thinking is dropped, not downgraded to plain text", async () => {
+	// v1.2.0 downgraded readable foreign thinking to a text block; v1.4.0 drops
+	// it entirely — sending readable thinking as plain text makes the new model
+	// treat it as part of the visible reply (pi-mono transform-messages.ts).
 	for (const [api, provider] of [["openai-responses", ores], ["anthropic-messages", am], ["google-generative-ai", gai]]) {
 		const model = makeModel(api, 1234);
 		const message = { role: "assistant", api: "foreign", provider: "foreign", model: "foreign", stopReason: "stop", timestamp: 0,
 			content: [thinking("reason", "opaque"), thinking("", "opaque"), thinking("secret", "opaque", true)] };
-		assert.deepEqual(tm.transformMessages([message], model)[0].content, [{ type: "text", text: "reason" }]);
+		const transformed = tm.transformMessages([message], model);
+		// The assistant message survives with empty content...
+		assert.equal(transformed.length, 1);
+		assert.deepEqual(transformed[0].content, []);
 		let wire;
 		await provider.stream(model, { messages: [message] }, { apiKey: "test", onPayload(payload) { wire = payload; throw new Error("captured before transport"); } }).result();
-		if (api === "openai-responses") assert.deepEqual(wire.input[0].content, [{ type: "output_text", text: "reason", annotations: [] }]);
-		else if (api === "anthropic-messages") assert.deepEqual(wire.messages[0].content, [{ type: "text", text: "reason" }]);
-		else assert.deepEqual(wire.contents[0].parts, [{ text: "reason" }]);
+		// ...and every converter drops the emptied assistant from the wire.
+		if (api === "openai-responses") assert.equal(wire.input.length, 0);
+		else if (api === "anthropic-messages") assert.equal(wire.messages.length, 0);
+		else assert.equal(wire.contents.length, 0);
 	}
 });
