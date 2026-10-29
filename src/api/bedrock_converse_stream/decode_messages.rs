@@ -46,27 +46,35 @@ pub fn decode_messages(body: &Value, model: &str) -> Result<Vec<Message>, String
             .ok_or("message missing content array")?;
         match role {
             "user" => {
+                // pi-ai 1.4 (#10794): a user message can be MIXED — toolResult
+                // blocks followed by caption text/images split out of an error
+                // result. Decode order-preserving (same shape as the
+                // anthropic-messages decoder): consecutive text/image blocks
+                // form one User message, each toolResult stands on its own.
                 let mut user = Vec::new();
-                let mut results = Vec::new();
+                let mut flush_user = |user: &mut Vec<UserBlock>, output: &mut Vec<Message>| {
+                    if user.is_empty() {
+                        return;
+                    }
+                    output.push(Message::User(UserMessage {
+                        content: match user.as_slice() {
+                            [UserBlock::Text(t)] => UserContent::Text(t.text.clone()),
+                            _ => UserContent::Blocks(std::mem::take(user)),
+                        },
+                        timestamp: 0,
+                    }));
+                };
                 for block in blocks {
                     if let Some(text) = block.get("text").and_then(Value::as_str) {
                         user.push(UserBlock::Text(text_block(text)));
                     } else if let Some(image) = block.get("image") {
                         user.push(UserBlock::Image(decode_image(image)?));
                     } else if let Some(result) = block.get("toolResult") {
-                        results.push(decode_tool_result(result)?);
+                        flush_user(&mut user, &mut output);
+                        output.push(decode_tool_result(result)?);
                     }
                 }
-                if !user.is_empty() {
-                    output.push(Message::User(UserMessage {
-                        content: match user.as_slice() {
-                            [UserBlock::Text(t)] => UserContent::Text(t.text.clone()),
-                            _ => UserContent::Blocks(user),
-                        },
-                        timestamp: 0,
-                    }));
-                }
-                output.extend(results);
+                flush_user(&mut user, &mut output);
             }
             "assistant" => {
                 let content = decode_assistant_blocks(blocks);

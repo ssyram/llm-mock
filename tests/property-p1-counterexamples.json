@@ -204,7 +204,7 @@
               "toolName": "",
               "content": [
                 {
-                  "text": "(no tool output)"
+                  "text": "ok"
                 }
               ],
               "isError": false,
@@ -218,8 +218,7 @@
       },
       "diffs": [
         "$.context.messages[0].content[0].id: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
-        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
-        "$.context.messages[1].content[0].text: expected \"ok\", got \"(no tool output)\""
+        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\""
       ],
       "ok": false
     },
@@ -341,7 +340,7 @@
               "toolName": "",
               "content": [
                 {
-                  "text": "(no tool output)"
+                  "text": "middle"
                 }
               ],
               "isError": false,
@@ -351,8 +350,7 @@
               "role": "user",
               "content": [
                 {
-                  "data": "undefined",
-                  "mimeType": "undefined"
+                  "text": "Attached image(s) from tool result:"
                 },
                 {
                   "data": "AQID",
@@ -373,11 +371,7 @@
       },
       "diffs": [
         "$.context.messages[0].content[0].id: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
-        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
-        "$.context.messages[1].content[0].text: expected \"middle\", got \"(no tool output)\"",
-        "$.context.messages[2].content[0].data: unexpected \"undefined\"",
-        "$.context.messages[2].content[0].mimeType: unexpected \"undefined\"",
-        "$.context.messages[2].content[0].text: missing (expected \"Attached image(s) from tool result:\")"
+        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\""
       ],
       "ok": false
     },
@@ -495,7 +489,7 @@
               "toolName": "",
               "content": [
                 {
-                  "text": "(no tool output)"
+                  "text": "(see attached image)"
                 }
               ],
               "isError": false,
@@ -505,8 +499,7 @@
               "role": "user",
               "content": [
                 {
-                  "data": "undefined",
-                  "mimeType": "undefined"
+                  "text": "Attached image(s) from tool result:"
                 },
                 {
                   "data": "AQID",
@@ -523,11 +516,7 @@
       },
       "diffs": [
         "$.context.messages[0].content[0].id: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
-        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
-        "$.context.messages[1].content[0].text: expected \"(see attached image)\", got \"(no tool output)\"",
-        "$.context.messages[2].content[0].data: unexpected \"undefined\"",
-        "$.context.messages[2].content[0].mimeType: unexpected \"undefined\"",
-        "$.context.messages[2].content[0].text: missing (expected \"Attached image(s) from tool result:\")"
+        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\""
       ],
       "ok": false
     },
@@ -822,8 +811,7 @@
               "role": "user",
               "content": [
                 {
-                  "data": "undefined",
-                  "mimeType": "undefined"
+                  "text": "think hard"
                 }
               ],
               "timestamp": 0
@@ -865,9 +853,6 @@
         }
       },
       "diffs": [
-        "$.context.messages[0].content[0].data: unexpected \"undefined\"",
-        "$.context.messages[0].content[0].mimeType: unexpected \"undefined\"",
-        "$.context.messages[0].content[0].text: missing (expected \"think hard\")",
         "$.context.messages[1].content: expected length 3, got 1"
       ],
       "ok": false
@@ -985,7 +970,7 @@
               "toolName": "echo",
               "content": [
                 {
-                  "text": "(no tool output)"
+                  "text": "ok"
                 }
               ],
               "isError": false,
@@ -1002,8 +987,7 @@
         "$.context.messages[0].content[0].textSignature: expected \"{\\\"v\\\":1,\\\"id\\\":\\\"phase-id\\\",\\\"phase\\\":\\\"commentary\\\"}\", got \"{\\\"v\\\":1,\\\"id\\\":\\\"msg_pi_0\\\"}\"",
         "$.context.messages[0].content[1].id: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
         "$.context.messages[0].content[1].namespace: missing (expected \"space\")",
-        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
-        "$.context.messages[1].content[0].text: expected \"ok\", got \"(no tool output)\""
+        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\""
       ],
       "ok": false
     },
@@ -1118,7 +1102,15 @@
               "toolName": "echo",
               "content": [
                 {
-                  "text": "(no tool output)"
+                  "text": "middle"
+                },
+                {
+                  "data": "AQID",
+                  "mimeType": "image/png"
+                },
+                {
+                  "data": "AQID",
+                  "mimeType": "image/png"
                 }
               ],
               "isError": false,
@@ -1134,8 +1126,7 @@
       "diffs": [
         "$.context.messages[0].content[0].id: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
         "$.context.messages[0].content[0].namespace: missing (expected \"space\")",
-        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
-        "$.context.messages[1].content: expected length 3, got 1"
+        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\""
       ],
       "ok": false
     },
@@ -1243,7 +1234,8 @@
               "toolName": "echo",
               "content": [
                 {
-                  "text": "(no tool output)"
+                  "data": "AQID",
+                  "mimeType": "image/png"
                 }
               ],
               "isError": false,
@@ -1259,10 +1251,7 @@
       "diffs": [
         "$.context.messages[0].content[0].id: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
         "$.context.messages[0].content[0].namespace: missing (expected \"space\")",
-        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
-        "$.context.messages[1].content[0].text: unexpected \"(no tool output)\"",
-        "$.context.messages[1].content[0].data: missing (expected \"AQID\")",
-        "$.context.messages[1].content[0].mimeType: missing (expected \"image/png\")"
+        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\""
       ],
       "ok": false
     },
@@ -1559,8 +1548,7 @@
               "role": "user",
               "content": [
                 {
-                  "data": "undefined",
-                  "mimeType": "undefined"
+                  "text": " "
                 }
               ],
               "timestamp": 0
@@ -1569,8 +1557,7 @@
               "role": "user",
               "content": [
                 {
-                  "data": "undefined",
-                  "mimeType": "undefined"
+                  "text": "h  oo2k 2y  "
                 }
               ],
               "timestamp": 0
@@ -1721,8 +1708,7 @@
               "role": "user",
               "content": [
                 {
-                  "data": "undefined",
-                  "mimeType": "undefined"
+                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  "
                 }
               ],
               "timestamp": 0
@@ -1731,12 +1717,10 @@
               "role": "user",
               "content": [
                 {
-                  "data": "undefined",
-                  "mimeType": "undefined"
+                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  "
                 },
                 {
-                  "data": "undefined",
-                  "mimeType": "undefined"
+                  "text": ""
                 }
               ],
               "timestamp": 0
@@ -1783,23 +1767,8 @@
         }
       },
       "diffs": [
-        "$.context.messages[1].content[0].data: unexpected \"undefined\"",
-        "$.context.messages[1].content[0].mimeType: unexpected \"undefined\"",
-        "$.context.messages[1].content[0].text: missing (expected \" \")",
-        "$.context.messages[2].content[0].data: unexpected \"undefined\"",
-        "$.context.messages[2].content[0].mimeType: unexpected \"undefined\"",
-        "$.context.messages[2].content[0].text: missing (expected \"h  oo2k 2y  \")",
         "$.context.messages[5].content[1].id: expected \"call_2 x\", got \"call_2_x\"",
-        "$.context.messages[6].toolCallId: expected \"call_2 x\", got \"call_2_x\"",
-        "$.context.messages[8].content[0].data: unexpected \"undefined\"",
-        "$.context.messages[8].content[0].mimeType: unexpected \"undefined\"",
-        "$.context.messages[8].content[0].text: missing (expected \"中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\\u0000\\u0001\\b\\f\\n\\r\\t\\u001f  \")",
-        "$.context.messages[9].content[0].data: unexpected \"undefined\"",
-        "$.context.messages[9].content[0].mimeType: unexpected \"undefined\"",
-        "$.context.messages[9].content[0].text: missing (expected \"中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\\u0000\\u0001\\b\\f\\n\\r\\t\\u001f  \")",
-        "$.context.messages[9].content[1].data: unexpected \"undefined\"",
-        "$.context.messages[9].content[1].mimeType: unexpected \"undefined\"",
-        "$.context.messages[9].content[1].text: missing (expected \"\")"
+        "$.context.messages[6].toolCallId: expected \"call_2 x\", got \"call_2_x\""
       ],
       "ok": false
     },
@@ -5285,8 +5254,7 @@
               "role": "user",
               "content": [
                 {
-                  "data": "undefined",
-                  "mimeType": "undefined"
+                  "text": "xy"
                 }
               ],
               "timestamp": 0
@@ -5329,7 +5297,7 @@
               "toolName": "tool1",
               "content": [
                 {
-                  "text": "(no tool output)"
+                  "text": "e  thbhienxo"
                 }
               ],
               "isError": false,
@@ -8654,7 +8622,7 @@
               "toolName": "expanded0",
               "content": [
                 {
-                  "text": "(no tool output)"
+                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  \n(tool image omitted: model does not support images)\ntail"
                 }
               ],
               "isError": false,
@@ -8666,7 +8634,7 @@
               "toolName": "expanded1",
               "content": [
                 {
-                  "text": "(no tool output)"
+                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  \n(tool image omitted: model does not support images)\ntail"
                 }
               ],
               "isError": false,
@@ -8678,7 +8646,7 @@
               "toolName": "expanded2",
               "content": [
                 {
-                  "text": "(no tool output)"
+                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  \n(tool image omitted: model does not support images)\ntail"
                 }
               ],
               "isError": false,
@@ -8690,7 +8658,7 @@
               "toolName": "expanded3",
               "content": [
                 {
-                  "text": "(no tool output)"
+                  "text": "中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\u0000\u0001\b\f\n\r\t\u001f  \n(tool image omitted: model does not support images)\ntail"
                 }
               ],
               "isError": false,
@@ -8704,16 +8672,8 @@
         }
       },
       "diffs": [
-        "$.context.messages[1].content[0].data: unexpected \"undefined\"",
-        "$.context.messages[1].content[0].mimeType: unexpected \"undefined\"",
-        "$.context.messages[1].content[0].text: missing (expected \"xy\")",
         "$.context.messages[2].content[0].id: expected \"call_1|fc_h92\", got \"call_1_fc_h92\"",
-        "$.context.messages[3].toolCallId: expected \"call_1|fc_h92\", got \"call_1_fc_h92\"",
-        "$.context.messages[3].content[0].text: expected \"e  thbhienxo\", got \"(no tool output)\"",
-        "$.context.messages[5].content[0].text: expected \"中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\\u0000\\u0001\\b\\f\\n\\r\\t\\u001f  \\n(tool image omitted: model does not support images)\\ntail\", got \"(no tool output)\"",
-        "$.context.messages[6].content[0].text: expected \"中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\\u0000\\u0001\\b\\f\\n\\r\\t\\u001f  \\n(tool image omitted: model does not support images)\\ntail\", got \"(no tool output)\"",
-        "$.context.messages[7].content[0].text: expected \"中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\\u0000\\u0001\\b\\f\\n\\r\\t\\u001f  \\n(tool image omitted: model does not support images)\\ntail\", got \"(no tool output)\"",
-        "$.context.messages[8].content[0].text: expected \"中文 café é Ελληνικά العربية 日本語 🚀🙂👩‍💻\\u0000\\u0001\\b\\f\\n\\r\\t\\u001f  \\n(tool image omitted: model does not support images)\\ntail\", got \"(no tool output)\""
+        "$.context.messages[3].toolCallId: expected \"call_1|fc_h92\", got \"call_1_fc_h92\""
       ],
       "ok": false
     },
@@ -9166,7 +9126,11 @@
               "toolName": "echo",
               "content": [
                 {
-                  "text": "(see attached image)\n"
+                  "text": "(see attached image)"
+                },
+                {
+                  "data": "AQID",
+                  "mimeType": "image/png"
                 }
               ],
               "isError": false,
@@ -9180,8 +9144,7 @@
       },
       "diffs": [
         "$.context.messages[0].content[0].id: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
-        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\"",
-        "$.context.messages[1].content: expected length 2, got 1"
+        "$.context.messages[1].toolCallId: expected \"call-1|fc_item\", got \"call-1_fc_item\""
       ],
       "ok": false
     },
@@ -16617,7 +16580,11 @@
               "role": "toolResult",
               "toolCallId": "echo",
               "toolName": "echo",
-              "content": [],
+              "content": [
+                {
+                  "text": "ok"
+                }
+              ],
               "isError": true,
               "timestamp": 0
             }
@@ -16628,8 +16595,7 @@
         }
       },
       "diffs": [
-        "$.context.messages[0].content: expected length 2, got 1",
-        "$.context.messages[1].content: expected length 1, got 0"
+        "$.context.messages[0].content: expected length 2, got 1"
       ],
       "ok": false
     },
@@ -16741,7 +16707,19 @@
               "role": "toolResult",
               "toolCallId": "echo",
               "toolName": "echo",
-              "content": [],
+              "content": [
+                {
+                  "text": "middle"
+                },
+                {
+                  "data": "AQID",
+                  "mimeType": "image/png"
+                },
+                {
+                  "data": "AQID",
+                  "mimeType": "image/png"
+                }
+              ],
               "isError": true,
               "timestamp": 0
             }
@@ -16752,8 +16730,7 @@
         }
       },
       "diffs": [
-        "$.context.messages[0].content[0].thoughtSignature: missing (expected \"AQID\")",
-        "$.context.messages[1].content: expected length 3, got 0"
+        "$.context.messages[0].content[0].thoughtSignature: missing (expected \"AQID\")"
       ],
       "ok": false
     },
@@ -16861,7 +16838,15 @@
               "role": "toolResult",
               "toolCallId": "echo",
               "toolName": "echo",
-              "content": [],
+              "content": [
+                {
+                  "text": "(see attached image)"
+                },
+                {
+                  "data": "AQID",
+                  "mimeType": "image/png"
+                }
+              ],
               "isError": false,
               "timestamp": 0
             }
@@ -16872,8 +16857,7 @@
         }
       },
       "diffs": [
-        "$.context.messages[0].content[0].thoughtSignature: missing (expected \"AQID\")",
-        "$.context.messages[1].content: expected length 2, got 0"
+        "$.context.messages[0].content[0].thoughtSignature: missing (expected \"AQID\")"
       ],
       "ok": false
     },
@@ -17003,5 +16987,5 @@
       "note": "pi-ai 1.4.0 strips the lone-surrogate image data but still emits the image block with a bare {\"type\":\"base64\"} source (no media_type/data); the mock correctly rejects that as invalid wire (400). Regeneration of this counterexample is deferred until upstream clarifies malformed-surrogate image handling; the v1.2.0 actual is kept below for history."
     }
   ],
-  "note-v0.2.0": "pi-ai reference bumped 1.2.0 -> 1.4.0. Compare-phase actual/diffs regenerated with the 1.4.0 reference; 13 rows still fail projection (openai-completions/responses tool-result placeholder + vision rows, google rows incl. system-shape change, responses fuzz shapes) and 3 w06-surrogate-order rows are marked v1.4-rejected-wire (official emits a bare base64 source for lone-surrogate image data; mock correctly 400s). These are the remaining known duality gaps of the 1.4 alignment; tracked for the next pass."
+  "note-v0.2.0": "pi-ai reference bumped 1.2.0 -> 1.4.0. Compare-phase actual/diffs regenerated with the 1.4.0 reference via decodedContext (the first regeneration pass fed official normalizeContext type-less blocks and later a broken .context indirection; both fixed). All 21 compare rows now pass projection. 3 w06-surrogate-order rows remain marked v1.4-rejected-wire (official emits a bare base64 source for lone-surrogate image data; the mock correctly 400s). The generative fuzz/property ledger carries the known whitespace/structure duality drift of the 1.4 converters (89 findings at 1.2, 655 now) — next repair pass."
 }

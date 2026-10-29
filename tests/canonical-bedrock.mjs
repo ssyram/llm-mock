@@ -17,6 +17,11 @@ function document(value) {
 	return Object.fromEntries(Object.entries(value).filter(([key]) => key.length).map(([key, nested]) => [key, document(nested)]));
 }
 
+function isAnthropicClaudeModel(model) {
+	// mirrors pi-ai bedrock-converse-stream.ts: Claude via Bedrock follows the
+	// Anthropic rules (error-image split, etc.).
+	return /claude/i.test(model.id ?? "") || /claude/i.test(model.name ?? "");
+}
 export function canonicalBedrock(context, model, options) {
 	const collapsed = piAi.collapseSystemMessages(piAi.normalizeContext(context));
 	const currentTools = options?.toolChoice === "none" ? [] : piAi.getCurrentTools(collapsed.messages);
@@ -24,6 +29,8 @@ export function canonicalBedrock(context, model, options) {
 	const initial = collapsed.messages[0]?.role === "system" ? collapsed.messages[0] : undefined;
 	const conversation = piAi.withoutInitialSystemMessage(collapsed.messages);
 	const transformed = tm.transformMessages(conversation, model, (id) => id.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64));
+	const claude = isAnthropicClaudeModel(model);
+	const pendingErrorImages = [];
 	const messages = [];
 	const systemText = initial ? sanitize(text.getSystemMessageText(initial)) : "";
 	if (systemText || tools.length) messages.push({ role: "system", content: systemText, ...(tools.length ? { toolsAdded: tools } : {}), timestamp: 0 });
@@ -49,11 +56,26 @@ export function canonicalBedrock(context, model, options) {
 			if (content.length) messages.push({ role: "assistant", content, api: "bedrock-converse-stream", provider: "amazon-bedrock", model: model.id,
 				usage: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 } }, stopReason: "stop", timestamp: 0 });
 		} else if (msg.role === "toolResult") {
-			const content = userBlocks(msg.content);
+			let content = userBlocks(msg.content);
 			if (!content.length && !msg.content.some((b) => b.type === "image")) content.push({ text: "<empty>" });
 			messages.push({ role: "toolResult", toolCallId: msg.toolCallId, toolName: "", content, isError: msg.isError, timestamp: 0 });
+			// pi-ai 1.4 (#10794) on Claude models: images in an ERROR tool result are
+			// split out — placeholders stay in the result, caption+images follow all
+			// tool results of the turn as plain user blocks. Non-Claude keeps inline.
+			if (claude && msg.isError && msg.content.some((b) => b.type === "image")) {
+				const placeholder = "(image attached after the tool results)";
+				// Bedrock keeps the placeholder TextContent[] as separate blocks
+				// (convertToolResultContent), unlike anthropic-messages which joins
+				// them into one string.
+				messages.at(-1).content = msg.content.map((b) => ({ text: b.type === "image" ? placeholder : b.text }));
+				pendingErrorImages.push(
+					{ text: `Images from the error result of tool call ${msg.toolCallId} (${msg.toolName}):` },
+					...msg.content.filter((b) => b.type === "image").map((b) => ({ data: b.data, mimeType: b.mimeType })),
+				);
+			}
 		}
 	}
+	if (pendingErrorImages.length) messages.push({ role: "user", content: pendingErrorImages, timestamp: 0 });
 	const requestOptions = canonicalRequestOptions(model.api, model, options, currentTools);
 	const reasoning = canonicalBedrockReasoning(model, options ?? {});
 	if (reasoning !== undefined) requestOptions.reasoning = reasoning;
