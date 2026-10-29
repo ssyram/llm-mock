@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 export const scenarioCommands = Object.freeze({
   "rewrite-marker": [
     "printf '%s\\n' 'FSMBR_ORIGINAL_MARKER' > fsmbr-original-marker.txt",
@@ -9,6 +10,9 @@ printf '%s\n' 'pipeline marker' | cat > fidelity-marker.txt`,
   "write-probe": [
     "printf '%s\\n' 'FSMBR_WRITE_PROBE' > fsmbr-write-probe.txt",
   ],
+  "enter-write": [],
+  "enter-done-write": [],
+  "enter-only": [],
   "two-call-refresh": [
     "printf '%s\\n' 'FSMBR_CALL_ONE' > fsmbr-call-one.txt",
     "printf '%s\\n' 'FSMBR_CALL_TWO' > fsmbr-call-two.txt",
@@ -56,9 +60,17 @@ function hostToolByExactName(messages, exact) {
 function fsmToolName(messages, needle) {
   const names = [];
   for (const message of messages) {
-    if (message?.role !== "system" || !Array.isArray(message.toolsAdded)) continue;
-    for (const tool of message.toolsAdded) {
-      if (typeof tool?.name === "string" && tool.name.includes(needle)) names.push(tool.name);
+    if (message?.role === "system" && Array.isArray(message.toolsAdded)) {
+      for (const tool of message.toolsAdded) {
+        if (typeof tool?.name === "string" && tool.name.includes(needle)) names.push(tool.name);
+      }
+    }
+    // Deferred-tool hosts (Claude Code 2.x ToolSearch): the full schemas land
+    // in a tool result's <functions> block, never in toolsAdded.
+    if (message?.role === "toolResult" || message?.role === "user") {
+      const text = JSON.stringify(message.content ?? "");
+      const pattern = new RegExp(`mcp__[A-Za-z0-9_-]*${needle}[A-Za-z0-9_-]*`, "g");
+      for (const match of text.matchAll(pattern)) names.push(match[0]);
     }
   }
   return [...new Set(names)][0];
@@ -76,30 +88,66 @@ function tutorialQuotedResult(messages, callId) {
   return `isError=${String(result.isError === true)} ${head}`;
 }
 
-function tutorialRespond({ messages, api, model, toolName, argumentsFixture = {} }) {
+function stepRespond({ scenario, steps, messages, api, model, toolName, argumentsFixture = {} }) {
   if (typeof toolName !== "string" || toolName.length === 0) {
-    throw new Error("tutorial requires the bash tool name (--tool-name or discovery)");
+    throw new Error(`scenario ${scenario} requires the bash tool name (--tool-name or discovery)`);
   }
   const issued = new Set();
   for (const message of messages) {
     if (message?.role !== "assistant" || !Array.isArray(message.content)) continue;
     for (const block of message.content) {
-      if (block?.type === "toolCall" && typeof block.id === "string" && block.id.startsWith("fsmbr_tutorial_")) {
+      if (block?.type === "toolCall" && typeof block.id === "string"
+          && block.id.startsWith(`fsmbr_${scenario}_`)) {
         issued.add(block.id);
       }
     }
   }
   const done = Math.max(0, ...[...issued].map((id) => Number(id.split("_").pop()) || 0));
-  const previousId = `fsmbr_tutorial_${done}`;
-  const next = TUTORIAL_STEPS[done];
+  const previousId = `fsmbr_${scenario}_${done}`;
+  const next = steps[done];
   const carry = done > 0 && issued.has(previousId)
     ? `\n\n上一步结果：${tutorialQuotedResult(messages, previousId)}`
     : "";
   if (!next) {
     return finished(api, model, messages,
-      "教程全部完成。每段命令都经过了 FSM 门禁 → srt 沙盒改写 → 真实执行。" + carry);
+      `scenario ${scenario} 完成。` + carry);
   }
-  const id = `fsmbr_tutorial_${done + 1}`;
+  // MCP servers connect asynchronously: on the very first turns the host may
+  // not yet advertise the fsm tools. Issue a harmless `true` (id suffix 0,
+  // does not advance the step counter) until the needed tool shows up.
+  // A failed previous step ends the flow: admission refusal (fsm step, no
+  // active FSM — running the probes ungoverned would be wrong) and the
+  // hook-local runtime guard (bash step, hook error surfaces as an error
+  // result) both terminate instead of retrying.
+  if (done > 0) {
+    const previous = steps[done - 1];
+    const priorResult = resultFor(messages, previousId);
+    const padded = resultFor(messages, `${previousId}w`);
+    const outcome = priorResult ?? padded;
+    if (outcome?.isError === true) {
+      return finished(api, model, messages,
+        `step ${done} (${previous?.tool}) was rejected: ${tutorialQuotedResult(messages, outcome.toolCallId)}`);
+    }
+  }
+  // Optional gate: when the fixture sets bashGateFile, a bash step is only
+  // issued once that file exists; until then harmless `true` calls keep the
+  // conversation alive (id suffix "w" never advances the step counter —
+  // Number("2w") || 0 === 0). Lets a runner flip host state mid-run at a
+  // deterministic point (e.g. between enter and the probe).
+  if (next.tool === "bash" && typeof argumentsFixture.bashGateFile === "string"
+      && !existsSync(argumentsFixture.bashGateFile)) {
+    return toolReply(api, model, messages, toolName, `fsmbr_${scenario}_${done + 1}w`,
+      { command: "true" });
+  }
+  if (next.tool === "fsm" && !fsmToolName(messages, next.discover)) {
+    const search = hostToolByExactName(messages, "ToolSearch");
+    if (!search) {
+      throw new Error(`scenario ${scenario}: ${next.discover} not advertised and no ToolSearch tool`);
+    }
+    return toolReply(api, model, messages, search, `fsmbr_${scenario}_0`,
+      { query: "fsm", max_results: 50 });
+  }
+  const id = `fsmbr_${scenario}_${done + 1}`;
   let call;
   if (next.tool === "bash") {
     call = { name: toolName, arguments: {
@@ -122,7 +170,7 @@ function tutorialRespond({ messages, api, model, toolName, argumentsFixture = {}
       : next.args;
     call = { name: fsmTool, arguments: args };
   } else {
-    throw new Error(`tutorial step ${done + 1}: unknown tool kind ${next.tool}`);
+    throw new Error(`scenario ${scenario} step ${done + 1}: unknown tool kind ${next.tool}`);
   }
   return assistantMessage(api, model, messages, [
     { type: "text", text: next.text + carry },
@@ -208,9 +256,44 @@ function callId(scenario, step) {
   return `fsmbr_${scenario}_${step}`;
 }
 
+const ENTER_WRITE_STEPS = [
+  { tool: "fsm", discover: "enter_fsm", args: null, text: "Enter the sandbox-guarded FSM." },
+  { tool: "bash", command: "printf '%s\n' 'FSMBR_WRITE_PROBE' > fsmbr-write-probe.txt",
+    text: "Run the controlled write probe once." },
+];
+
+// enter → self_check → transition → two bash probes in the PROFILE-LESS
+// terminal state. The host is expected to still wrap Bash there (CC cwd
+// governance): `cd cd-subdir` must not leak into the `cat`, which reads
+// cd-marker.txt from the workspace root (LEAKED would mean the cd stuck).
+const ENTER_DONE_STEPS = [
+  { tool: "fsm", discover: "enter_fsm", args: null, text: "Enter the sandbox-guarded FSM." },
+  { tool: "fsm", discover: "submit_self_check", args: { target: "done", checks: [] },
+    text: "Submit the self check for the terminal state." },
+  { tool: "fsm", discover: "try_transition", args: { target: "done", evidence: "fixture" },
+    text: "Transition into the terminal state." },
+  { tool: "bash", command: "cd cd-subdir && pwd",
+    text: "Change directory into cd-subdir (expected to stay inside a child shell)." },
+  { tool: "bash", command: "cat fsmbr-cd-marker.txt",
+    text: "Read the marker at the workspace root — proves the cd did not leak." },
+];
+
+const ENTER_ONLY_STEPS = [
+  { tool: "fsm", discover: "enter_fsm", args: null, text: "Enter the sandbox-guarded FSM." },
+];
+
 export function respond({ scenario, messages, api, model, toolName, argumentsFixture = {} }) {
   if (scenario === "tutorial") {
-    return tutorialRespond({ scenario, messages, api, model, toolName, argumentsFixture });
+    return stepRespond({ scenario, steps: TUTORIAL_STEPS, messages, api, model, toolName, argumentsFixture });
+  }
+  if (scenario === "enter-write") {
+    return stepRespond({ scenario, steps: ENTER_WRITE_STEPS, messages, api, model, toolName, argumentsFixture });
+  }
+  if (scenario === "enter-done-write") {
+    return stepRespond({ scenario, steps: ENTER_DONE_STEPS, messages, api, model, toolName, argumentsFixture });
+  }
+  if (scenario === "enter-only") {
+    return stepRespond({ scenario, steps: ENTER_ONLY_STEPS, messages, api, model, toolName, argumentsFixture });
   }
   const steps = scenario === "fuzz" ? fuzzSteps(argumentsFixture) : scenarioCommands[scenario];
   if (!steps) throw new Error(`unknown scenario: ${scenario}`);
