@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { testMarkdownPlaybookPi } from "../scripts/mock-scripts/markdown-playbook/tests/pi-e2e.mjs";
 
 export async function testPiHarness({ dir, baseUrl, run, captures }) {
 	const agent = join(dir, "agent");
@@ -46,4 +47,5 @@ export async function testPiHarness({ dir, baseUrl, run, captures }) {
 	assert.notEqual(error.status, 0);
 	assert.match(error.stdout + error.stderr, /mock_failure|intentional mock failure/);
 	assert.ok(captures().some((capture) => capture.keyId === "failtest"), "error request reached mock server");
+	await testMarkdownPlaybookPi({ dir, baseUrl, run, captures });
 }

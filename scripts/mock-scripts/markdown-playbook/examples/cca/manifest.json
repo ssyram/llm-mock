@@ -1,0 +1,21 @@
+{
+  "total": 7,
+  "page_size": 3,
+  "pages": [
+    {
+      "cursor": null,
+      "envelope": "env-0.json",
+      "page": "page-0.json"
+    },
+    {
+      "cursor": "m03",
+      "envelope": "env-1.json",
+      "page": "page-1.json"
+    },
+    {
+      "cursor": "m06",
+      "envelope": "env-2.json",
+      "page": "page-2.json"
+    }
+  ]
+}

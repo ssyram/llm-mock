@@ -1,0 +1,16 @@
+{
+  "phase": "synthetic",
+  "task_id": "synthetic-walk",
+  "total": 7,
+  "page_start": 6,
+  "page_size": 1,
+  "members": [
+    {
+      "id": "m07",
+      "file": "synthetic-m07.c",
+      "line": 7,
+      "reason": "synthetic fixture"
+    }
+  ],
+  "next_after": null
+}

@@ -1,0 +1,28 @@
+{
+  "phase": "synthetic",
+  "task_id": "synthetic-walk",
+  "total": 7,
+  "page_start": 0,
+  "page_size": 3,
+  "members": [
+    {
+      "id": "m01",
+      "file": "synthetic-m01.c",
+      "line": 1,
+      "reason": "synthetic fixture"
+    },
+    {
+      "id": "m02",
+      "file": "synthetic-m02.c",
+      "line": 2,
+      "reason": "synthetic fixture"
+    },
+    {
+      "id": "m03",
+      "file": "synthetic-m03.c",
+      "line": 3,
+      "reason": "synthetic fixture"
+    }
+  ],
+  "next_after": "m03"
+}
