@@ -1,0 +1,22 @@
+{
+  "response-batching": {"responseSays":["","second response","finished"],"toolCountsByResponse":[2,1,0],"defaultResultCountsByResponse":[2,0,0],"explicitResultCountsByResponse":[0,1,0]},
+  "affine-per-response": {"responseSays":["first response","second response","finished"],"affineToHoldersByResponse":[1,1,0]},
+  "label-loop-dynamic-id": {"labels":["LOOP","DONE"],"backwardTargets":["LOOP"],"counterInput":"vars.count","counterSave":{"count":"next"},"expectedCounterTransitions":[[0,1],[1,2],[2,3]],"dynamicToolCallSites":1},
+  "import-frame-main": {"importCount":2,"importPaths":["./import-frame-child.md","./import-frame-child.md"],"freshFramePerImport":true,"eofReturns":true},
+  "import-frame-child": {"params":{"token":"default-token"},"vars":{"local":"unset"},"saveTargets":["local"]},
+  "import-default-param": {"omittedBindings":["token"],"expectedDefaults":{"token":"default-token"}},
+  "recursive-import": {"recursiveImportPath":"./recursive-import.md","recursiveWith":["remaining"],"eofReturns":true},
+  "value-reference": {"structuredValueSource":"external-values","wholeValueReferences":["vars.copy"],"mixedTextReferenceCount":3,"expressionCount":0},
+  "external-counter": {"externalKinds":["segment"],"withKeys":["count","limit","observationFile"],"businessInput":"vars.count","saveMap":{"count":"next"},"caseResults":["again","done"],"observationAffectsResult":false},
+  "segment-aggregator": {"trajectories":["run-segment-then-batch","skip-segment-then-batch"],"batchToolCount":2,"segmentCount":1,"aggregatorCount":1,"aggregatorOwnsSuccessor":true,"localResultOwnsSuccessor":false},
+  "system-import-main": {"fence":"match system","systemMatcherCount":1,"systemMatcherPosition":"mid-function","importCount":1,"readerConsumption":0},
+  "system-import-child": {"fence":"match system","systemMatcherCount":1,"systemMatcherPosition":"imported-function","readerConsumption":0},
+  "reader-isolation": {"programMayReturn":["result","values","reader"],"programMayNotReturn":["continuation","stack","pc"]},
+  "cache-hit-probe": {"requiresSharedCacheDir":true,"toolCountsByResponse":[1,0],"hotObservationDelta":0,"coldObservationMayIncrease":true},
+  "cache-volatile": {"externalCount":2,"toolCountsByResponse":[1,0],"volatileExternalIndexes":[1],"reusableCheckpointBoundary":"before-volatile","volatileObservationIsBusinessState":false},
+  "label-result-entry": {"labels":["RESPONSE_START","RESULT_ENTRY"],"labelPositions":["response-start","after-tools-before-results"]},
+  "ordered-cases": {"selectorOrder":["contains","any","otherwise"],"selection":"first-match"},
+  "compaction-classifier": {"fence":"match compaction","classifier":"external-judge","vendorCompactionBitRequired":false,"restoresMissingHistory":false},
+  "pi-loop-child": {"params":{"token":0},"vars":{"local":"unset"},"savedLocal":"seen:<token>","toolCallsPerImport":1,"toolArgumentReferences":["params.token","vars.local"],"eofReturns":true},
+  "representative-pi-flow": {"userTurns":2,"toolCountsByResponse":[2,1,1,1,1,0,0],"emptySayResponseCount":4,"importToolIterations":3,"importTokens":[0,1,2],"counterTransitions":[[0,1],[1,2],[2,3]],"segmentCount":1,"aggregatorCount":1}
+}

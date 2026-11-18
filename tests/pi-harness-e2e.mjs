@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { testMarkdownPlaybookPi } from "../scripts/mock-scripts/markdown-playbook/tests/pi-e2e.mjs";
+import { testMarkdownPlaybookPi } from "../playbook/tests/pi-e2e.mjs";
 
 export async function testPiHarness({ dir, baseUrl, run, captures }) {
 	const agent = join(dir, "agent");

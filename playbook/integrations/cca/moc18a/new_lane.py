@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+"""moc18a 新专用 lane 启动器：真实图/FSM/OC/根与子 session/独立 root+socket+端口，
+模型回复全部经新解释器（mock2.mjs + 三管理单元薄剧本 + 冻结 Pilot 业务 adapter）。
+
+用法：python3 new_lane.py LANE_ROOT TAPE|- SPEC_JSON
+TAPE 为 old lane 可回放选择带（缺省 '-'）；SPEC 为 pair 共享输入
+（nodes/edges/seed/parallel/batch/mock）：图由 spec.nodes/edges 直接构造（真实
+生产物化路径），seed 只进 Mock 选择；spec 携带的任何路径字段只当数据读、绝不
+当写入目的地，源材料始终写进私有 workspace。服务保持存活供 parent 的原生
+TUI 输入 start 触发全自动两阶段；本脚本不投递任何输入。
+"""
+import json
+import shlex
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+PROJECT = Path("/Users/ssyram/workspace/work-fv/c-code-verify/.local/analysis-decouple")
+HOME = PROJECT / ".local/cca-newtree-sut-20261117"
+sys.path[:0] = [str(HOME / "scripts"), str(PROJECT / ".pi/research/gate-latency-mock-148"), str(HERE.parent)]
+
+from cca_bench import workspace_isolation
+from cca_bench.suites import mock_plan
+from cca_bench.suites.mock_lane import Lane
+from pilot.case_body import pilot_budgets, pilot_level
+
+import adapter.spec_graph as spec_graph
+from adapter.collect_terminal import collect_terminal, first_tape_fault, terminal_message
+
+consume_graph_spec, write_sources = spec_graph.consume_graph_spec, spec_graph.write_sources
+
+
+def save(path, document):
+    path.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def validate_spec(spec):
+    required = {"seed", "parallel", "batch", "nodes", "edges", "mock"}
+    missing = sorted(required - set(spec))
+    if missing:
+        raise SystemExit("input spec missing fields: %s" % missing)
+    if spec["parallel"] < 1 or spec["batch"] < 1:
+        raise SystemExit("parallel/batch must be positive configured values (para override only via start input)")
+
+
+def main():
+    if len(sys.argv) != 4:
+        raise SystemExit(__doc__)
+    lane_root, tape_arg, spec_path = (Path(sys.argv[1]).resolve(), sys.argv[2], Path(sys.argv[3]).resolve())
+    spec = json.loads(spec_path.read_text(encoding="utf-8"))
+    validate_spec(spec)
+    lane_root.mkdir(parents=True)
+    workspace = lane_root / "w"
+    workspace_isolation.isolate_workspace(workspace, git=True)
+    artifact = consume_graph_spec(spec)
+    write_stats, source_root = write_sources(artifact, workspace)
+    level = pilot_level(spec["parallel"], spec["batch"], spec["mock"]["max_new_nodes"])
+    budgets = pilot_budgets(level, len(artifact.nodes), len(artifact.edges), 1800,
+                            spec["mock"]["max_new_nodes"], spec["mock"]["max_new_facts"])
+    lane = Lane("moc18a-new", lane_root, workspace, mock_plan.binaries(), spec["parallel"], spec["batch"])
+    temp = lane_root / "tmp"
+    temp.mkdir()
+    lane.env.update(TMPDIR=str(temp), TERM="xterm-256color", OPENCODE_DISABLE_AUTOUPDATE="true",
+                    PYTHONDONTWRITEBYTECODE="1",
+                    CCA_NEW_LANE=str(lane_root), CCA_NEW_WORKSPACE=str(workspace),
+                    CCA_NEW_TAPE="" if tape_arg == "-" else str(Path(tape_arg).resolve()))
+    lane.prepare_dirs()
+    lane.start_fsm()
+    lane.deploy(HOME)
+    config_path = workspace / ("opencode.cca-v2-" + lane.config.prefix + ".json")
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["default_agent"] = "main"
+    config["agent"]["main"].update(mode="primary", description="Local Mock Pilot Main (new interpreter lane)")
+    config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+    lane.start_oc()
+    session = lane.create_root()
+    lane.env["CCA_NEW_ROOT_SESSION"] = session
+    lane.request("PATCH", "/session/" + session, {"title": "Mock Pilot new Main"})
+    save(lane_root / "input-spec.json", spec)
+    save(lane_root / "entries.json", {"analysis": lane.entry("analysis")})
+    (lane_root / "records").mkdir(exist_ok=True)
+    (lane_root / "fsm-slots").mkdir(exist_ok=True)
+    mount = lane.start_mock("http://127.0.0.1:1", shlex.join([sys.executable, str(HERE / "adapter" / "new_reply.py")]))
+    attach = json.loads((lane_root / "setup.json").read_text(encoding="utf-8"))["launch_command"]
+    attach = attach + ["attach", lane.config.server_url, "--dir", str(workspace), "--session", session]
+    shell = "#!/bin/sh\nset -eu\n" + "\n".join(
+        "export " + key + "=" + shlex.quote(value) for key, value in lane.env.items()
+        if key.startswith("CCA_NEW_") or key in ("HOME", "TMPDIR", "TERM", "PATH"))
+    shell += "\nexec " + shlex.join(attach) + "\n"
+    attach_path = lane_root / "attach.sh"
+    attach_path.write_text(shell, encoding="utf-8")
+    attach_path.chmod(0o700)
+    save(lane_root / "ready.json", {
+        "session": session, "workspace": str(workspace), "server": lane.config.server_url,
+        "mock_port": lane.mock_port, "mount": mount, "config": str(config_path), "attach": attach,
+        "births": lane.births, "prompt": "start", "initial_nodes": len(artifact.nodes),
+        "initial_edges": len(artifact.edges), "model": config["model"], "default_agent": config["default_agent"],
+        "interpreter": str(HERE.parents[3] / "mock2.mjs"),
+        "playbooks": {name: str(HERE / name) for name in ("main.md", "worker.md", "aux.md")},
+        "business_adapter": str(HERE / "adapter"), "tape": lane.env["CCA_NEW_TAPE"] or None,
+        "input_spec": str(spec_path),
+        "graph": {"nodes": list(artifact.nodes), "edges": [list(e) for e in artifact.edges],
+                  "sha256": artifact.sha256, "source_write": write_stats},
+        "boundary": "model replies only; FSM/OC/task packets/submissions are real; graph consumed from spec"})
+    print("Ready (new interpreter lane): native TUI input 'start' runs the full two phases.", flush=True)
+    tape_path = lane_root / "new-lane-tape.jsonl"
+    started_monotonic = None
+    deadline_reached = False
+    collected = False
+    while True:
+        time.sleep(1)
+        dead = [name for name, process in lane.processes.items() if not process.alive()]
+        if dead:
+            save(lane_root / "live.json", {"processes_alive": {n: p.alive() for n, p in lane.processes.items()},
+                                           "stopped": dead, "deadline_reached": deadline_reached})
+            raise SystemExit("lane process exited mid-run: %s" % dead)
+        tape = tape_path.read_text(encoding="utf-8") if tape_path.exists() else ""
+        tape_lines = len(tape.splitlines())
+        if started_monotonic is None and tape_lines > 0:
+            started_monotonic = time.monotonic()
+        if (started_monotonic is not None and not deadline_reached
+                and time.monotonic() - started_monotonic > budgets["deadline_s"]):
+            deadline_reached = True
+        if started_monotonic is not None and not collected:
+            messages = lane.request("GET", "/session/" + session + "/message", timeout=10)[1]
+            main_done = terminal_message(messages)
+            fault = first_tape_fault(tape)
+            if deadline_reached and not main_done and not fault:
+                fault = {"kind": "timed_out", "reason": "interactive Pilot execution deadline reached"}
+            if main_done or fault:
+                graph = {"mode": spec["mode"], "artifact": artifact, "entries": None,
+                         "bridge": None, "unreachable": []}
+                collect_terminal(HOME, lane_root, lane, graph, level, budgets, spec["seed"], main_done, fault)
+                collected = True
+                print("Result saved; OC/FSM/Mock remain available.", flush=True)
+        save(lane_root / "live.json", {"processes_alive": {n: p.alive() for n, p in lane.processes.items()},
+                                       "tape_lines": tape_lines,
+                                       "started": started_monotonic is not None,
+                                       "deadline_reached": deadline_reached})
+
+
+if __name__ == "__main__":
+    main()

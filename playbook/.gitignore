@@ -1,0 +1,4 @@
+# playbook 项目运行产物（不入版本库；框架根 .gitignore 已覆盖 target/ 与 node_modules/）
+integrations/cca/oc/evidence/
+tests2/independent/artifacts/
+**/__pycache__/

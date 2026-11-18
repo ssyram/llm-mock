@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.invalid/playbook-next/pi-run.schema.json",
+  "title": "Independent real Pi duality run summary",
+  "type": "object",
+  "required": ["runId", "playbook", "commands", "turns", "captures", "sessionFiles", "requestReplay", "mutations", "sideEffects"],
+  "properties": {
+    "runId": { "type": "string" },
+    "playbook": { "type": "string" },
+    "commands": { "type": "array", "items": { "type": "array", "items": { "type": "string" } } },
+    "turns": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["status", "stdoutFile", "stderrFile"],
+        "properties": {
+          "status": { "type": "integer" },
+          "stdoutFile": { "type": "string" },
+          "stderrFile": { "type": "string" }
+        }
+      }
+    },
+    "captures": { "type": "array", "items": { "type": "string" } },
+    "sessionFiles": { "type": "array", "items": { "type": "string" } },
+    "requestReplay": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["seq", "frontier", "accepted"],
+        "properties": {
+          "seq": { "type": "integer", "minimum": 1 },
+          "frontier": { "enum": ["ready", "waiting", "awaitingUser", "complete"] },
+          "accepted": { "type": "boolean" },
+          "expectedNext": { "type": ["object", "null"] }
+        }
+      }
+    },
+    "mutations": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["field", "rejected", "sideEffectsUnchanged", "errorCode"],
+        "properties": {
+          "field": { "enum": ["assistantText", "toolArguments", "toolCallId", "toolResult"] },
+          "rejected": { "const": true },
+          "sideEffectsUnchanged": { "const": true },
+          "errorCode": { "type": "string" }
+        }
+      }
+    },
+    "sideEffects": {
+      "type": "object",
+      "required": ["files", "toolIterations", "dynamicToolIdsUnique"],
+      "properties": {
+        "files": { "type": "object" },
+        "toolIterations": { "const": 3 },
+        "dynamicToolIdsUnique": { "const": true }
+      }
+    },
+    "vendorProjection": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

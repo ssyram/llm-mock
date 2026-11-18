@@ -1,0 +1,192 @@
+{
+  "response-batching": {
+    "static": [
+      "test:api response-batching: say boundaries, call params, explicit/default result modes"
+    ],
+    "dynamic": [
+      "target-runtime representative flow: initial two-call batch",
+      "reference-trace: partial batch waiting and complete frontier"
+    ]
+  },
+  "affine-per-response": {
+    "static": [
+      "test:api affine-per-response: holder count per group",
+      "test:api affine-two-holders and affine-local-with-agg rejects"
+    ],
+    "dynamic": []
+  },
+  "label-loop-dynamic-id": {
+    "static": [
+      "test:api label-loop-dynamic-id: labels, call site, with/save/cases"
+    ],
+    "dynamic": [
+      "target-runtime frame-driven counter loops three tool iterations",
+      "counter-program test proves observation cannot drive result"
+    ]
+  },
+  "import-frame-main": {
+    "static": [
+      "test:api import-frame-main: two import declarations and compiled closure"
+    ],
+    "dynamic": [
+      "target-runtime representative flow: fresh imported params/vars",
+      "target-language recursive EOF return"
+    ]
+  },
+  "import-frame-child": {
+    "static": [
+      "test:api import-frame-child: front defaults, refs and save mapping"
+    ],
+    "dynamic": [
+      "target-runtime representative commands expose token and saved local"
+    ]
+  },
+  "import-default-param": {
+    "static": [
+      "test:api import-default-param: empty with plus child default in closure"
+    ],
+    "dynamic": [
+      "target-runtime omitted import binding uses declared default"
+    ]
+  },
+  "recursive-import": {
+    "static": [
+      "test:api recursive-import: self import declaration and remaining ref"
+    ],
+    "dynamic": [
+      "target-language recursive imported function returns through EOF",
+      "target-errors dead goto/import budget cases"
+    ]
+  },
+  "value-reference": {
+    "static": [
+      "test:api value-reference: refs, call params and save declaration",
+      "test:api arithmetic-template reject"
+    ],
+    "dynamic": [
+      "target-language whole-value payload remains object and mixed refs become strings",
+      "target-errors missing-reference"
+    ]
+  },
+  "external-counter": {
+    "static": [
+      "test:api external-counter: command/with/save/cases only"
+    ],
+    "dynamic": [
+      "counter-program pure current-to-next test",
+      "target-runtime cold rebuild output equivalence"
+    ]
+  },
+  "segment-aggregator": {
+    "static": [
+      "test:api segment-aggregator: user case order, complete batch group and aggregator attachment"
+    ],
+    "dynamic": [
+      "target-runtime run and skip segment trajectories both emit and aggregate full batch"
+    ]
+  },
+  "system-import-main": {
+    "static": [
+      "test:api system-import-main: matchSystem and import closure"
+    ],
+    "dynamic": [
+      "target-language imported and mid-function system matching reuses context without reader consumption",
+      "real Pi job system-selected entry"
+    ]
+  },
+  "system-import-child": {
+    "static": [
+      "test:api system-import-child: matchSystem cases and labels"
+    ],
+    "dynamic": [
+      "target-language system import branch execution"
+    ]
+  },
+  "reader-isolation": {
+    "static": [
+      "test:api reader-isolation: segment command/with/cases"
+    ],
+    "dynamic": [
+      "target-language persisted reader.offset with intact frame stack",
+      "target-errors protocol-extra stack keys"
+    ]
+  },
+  "cache-hit-probe": {
+    "static": [
+      "test:api cache-hit-probe: canonical segment block plus tool response structure"
+    ],
+    "dynamic": [
+      "target-cache shared hit versus no-cache cold observation",
+      "target-cache-rework system/tools/options namespace changes"
+    ]
+  },
+  "cache-volatile": {
+    "static": [
+      "test:api cache-volatile: volatile flag and block order"
+    ],
+    "dynamic": [
+      "target-cache volatile rerun without business-state coupling"
+    ]
+  },
+  "ordered-cases": {
+    "static": [
+      "test:api ordered-cases: selector and pass order"
+    ],
+    "dynamic": [
+      "target-language executes only first matching branch"
+    ]
+  },
+  "compaction-classifier": {
+    "static": [
+      "test:api compaction-classifier: matchCompaction judge/otherwise order"
+    ],
+    "dynamic": [
+      "target-language classified and ordinary requests choose explicit branches without history reconstruction"
+    ]
+  },
+  "pi-loop-child": {
+    "static": [
+      "test:api pi-loop-child: front, refs, save and one call site"
+    ],
+    "dynamic": [
+      "target-runtime three imports produce exact 0/1/2 frame-derived commands and unique IDs"
+    ]
+  },
+  "representative-pi-flow": {
+    "static": [
+      "test:api representative flow: groups, imports, programs and labels"
+    ],
+    "dynamic": [
+      "target-runtime complete representative business trace",
+      "real Pi request-frontier job retained for parent final run"
+    ]
+  },
+  "compile-negatives": {
+    "static": [
+      "test:api all compile reject fixtures including unknown internal/segment case targets and unknown-with diagnostic"
+    ],
+    "dynamic": []
+  },
+  "runtime-negatives": {
+    "static": [],
+    "dynamic": [
+      "target-errors reader protocol, missing ref, result entry, budget and program fault cases"
+    ]
+  },
+  "cache-rework": {
+    "static": [],
+    "dynamic": [
+      "target-cache-rework input namespace and external dependency invalidation",
+      "target-cache two active request leases",
+      "target-cache-rework independent cleanup worker"
+    ]
+  },
+  "label-on-tool-result": {
+    "static": [
+      "test:api label-result-entry: resultEntry label position"
+    ],
+    "dynamic": [
+      "target-errors result entry without historical batch returns playbook_state"
+    ]
+  }
+}

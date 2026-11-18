@@ -1,0 +1,297 @@
+{
+  "contract": "../request.md + PLAYBOOK_ROOT/docs/next-language",
+  "status": "contract-first; compile API compares generic native IR only",
+  "parseCases": [
+    {
+      "id": "response-batching",
+      "file": "fixtures/expected-parse/response-batching.md",
+      "assert": [
+        "empty say is retained as a response boundary",
+        "adjacent calls share one response",
+        "omitted toolResult means otherwise but still requires each real result"
+      ]
+    },
+    {
+      "id": "affine-per-response",
+      "file": "fixtures/expected-parse/affine-per-response.md",
+      "assert": [
+        "two responses in one user turn may each own one result-to holder"
+      ]
+    },
+    {
+      "id": "label-loop-dynamic-id",
+      "file": "fixtures/expected-parse/label-loop-dynamic-id.md",
+      "assert": [
+        "backward label loop is legal",
+        "business counter uses current frame vars",
+        "each dynamic tool execution gets a fresh id"
+      ]
+    },
+    {
+      "id": "import-frame-main",
+      "file": "fixtures/expected-parse/import-frame-main.md",
+      "assert": [
+        "two imports create isolated params and vars",
+        "callee EOF returns to caller"
+      ]
+    },
+    {
+      "id": "import-frame-child",
+      "file": "fixtures/expected-parse/import-frame-child.md",
+      "assert": [
+        "callee locals never leak across calls"
+      ]
+    },
+    {
+      "id": "import-default-param",
+      "file": "fixtures/expected-parse/import-default-param-main.md",
+      "assert": [
+        "omitted import binding uses the declared scalar default"
+      ]
+    },
+    {
+      "id": "recursive-import",
+      "file": "fixtures/expected-parse/recursive-import.md",
+      "assert": [
+        "recursive calls receive explicit params",
+        "finite recursion returns through EOF"
+      ]
+    },
+    {
+      "id": "value-reference",
+      "file": "fixtures/expected-parse/value-reference.md",
+      "assert": [
+        "external values may populate vars with structured data",
+        "whole-value reference preserves type",
+        "mixed text is text",
+        "no recursive interpolation"
+      ]
+    },
+    {
+      "id": "external-counter",
+      "file": "fixtures/expected-parse/external-counter.md",
+      "assert": [
+        "with/save/cases use current frame value",
+        "observation file never drives result",
+        "playbook performs no arithmetic"
+      ]
+    },
+    {
+      "id": "segment-aggregator",
+      "file": "fixtures/expected-parse/segment-aggregator.md",
+      "assert": [
+        "skip trajectory bypasses only segment",
+        "run and skip both emit the complete tool batch",
+        "aggregator is the sole convergence successor"
+      ]
+    },
+    {
+      "id": "system-import-main",
+      "file": "fixtures/expected-parse/system-import-main.md",
+      "assert": [
+        "match system is legal mid-file and in imports",
+        "it emits nothing and consumes no user/tool reader"
+      ]
+    },
+    {
+      "id": "system-import-child",
+      "file": "fixtures/expected-parse/system-import-child.md",
+      "assert": [
+        "imported match system uses the same system context"
+      ]
+    },
+    {
+      "id": "reader-isolation",
+      "file": "fixtures/expected-parse/reader-isolation.md",
+      "assert": [
+        "program may return reader only",
+        "reader and execution stack remain distinct"
+      ]
+    },
+    {
+      "id": "cache-hit-probe",
+      "file": "fixtures/expected-parse/cache-hit-probe.md",
+      "assert": [
+        "observation count is meaningful only when requests share an explicit cache dir"
+      ]
+    },
+    {
+      "id": "cache-volatile",
+      "file": "fixtures/expected-parse/cache-volatile.md",
+      "assert": [
+        "volatile is a replay barrier",
+        "prefix before barrier remains reusable",
+        "volatile observation does not drive business state"
+      ]
+    },
+    {
+      "id": "ordered-cases",
+      "file": "fixtures/expected-parse/ordered-cases.md",
+      "assert": [
+        "the first matching case wins",
+        "normal no-match advances to the next case"
+      ]
+    },
+    {
+      "id": "compaction-classifier",
+      "file": "fixtures/expected-parse/compaction-classifier.md",
+      "assert": [
+        "match compaction explicitly classifies",
+        "classification does not reconstruct missing history"
+      ]
+    },
+    {
+      "id": "pi-loop-child",
+      "file": "fixtures/expected-parse/pi-loop-child.md",
+      "assert": [
+        "fresh local frame is observed",
+        "one real host tool call is emitted per import iteration",
+        "EOF returns"
+      ]
+    },
+    {
+      "id": "representative-pi-flow",
+      "file": "fixtures/expected-parse/representative-pi-flow.md",
+      "assert": [
+        "two real user rounds",
+        "three imported tool iterations expose params and local vars",
+        "empty say, segment and complete aggregation compose"
+      ]
+    }
+  ],
+  "rejectCases": [
+    {
+      "id": "affine-two-holders",
+      "file": "fixtures/expected-reject/affine-two-holders-one-response.md",
+      "phase": "compile",
+      "errorClass": "playbook_invalid",
+      "error": "two result blocks own to in one response"
+    },
+    {
+      "id": "affine-local-with-agg",
+      "file": "fixtures/expected-reject/affine-local-to-with-aggregator.md",
+      "phase": "compile",
+      "errorClass": "playbook_invalid",
+      "error": "local result owns to when aggregation exists"
+    },
+    {
+      "id": "label-in-tool-list",
+      "file": "fixtures/expected-reject/label-inside-tool-list.md",
+      "phase": "compile",
+      "errorClass": "playbook_invalid",
+      "error": "label splits an unfinished tool list"
+    },
+    {
+      "id": "label-in-aggregation",
+      "file": "fixtures/expected-reject/label-inside-aggregation.md",
+      "phase": "compile",
+      "errorClass": "playbook_invalid",
+      "error": "label enters the middle of mandatory aggregation"
+    },
+    {
+      "id": "unknown-label",
+      "file": "fixtures/expected-reject/unknown-label.md",
+      "phase": "compile",
+      "errorClass": "playbook_invalid",
+      "error": "goto target label is unknown"
+    },
+    {
+      "id": "internal-unknown-case-target",
+      "file": "fixtures/expected-reject/internal-unknown-case-target.md",
+      "phase": "compile",
+      "errorClass": "playbook_invalid",
+      "error": "internal cases target label is unknown"
+    },
+    {
+      "id": "segment-unknown-case-target",
+      "file": "fixtures/expected-reject/segment-unknown-case-target.md",
+      "phase": "compile",
+      "errorClass": "playbook_invalid",
+      "error": "segment cases target label is unknown"
+    },
+    {
+      "id": "duplicate-label",
+      "file": "fixtures/expected-reject/duplicate-label.md",
+      "phase": "compile",
+      "errorClass": "playbook_invalid",
+      "error": "label is duplicated"
+    },
+    {
+      "id": "cross-frame-target",
+      "file": "fixtures/expected-reject/cross-frame-target.md",
+      "phase": "compile",
+      "errorClass": "playbook_invalid",
+      "error": "callee target cannot resolve in caller frame"
+    },
+    {
+      "id": "arithmetic-template",
+      "file": "fixtures/expected-reject/arithmetic-template.md",
+      "phase": "compile",
+      "errorClass": "playbook_invalid",
+      "error": "template expression performs arithmetic"
+    },
+    {
+      "id": "import-unknown-with-key",
+      "file": "fixtures/expected-reject/import-unknown-with-key.md",
+      "phase": "compile",
+      "errorClass": "playbook_invalid",
+      "error": "import with contains an undeclared parameter"
+    },
+    {
+      "id": "missing-command",
+      "file": "fixtures/expected-reject/missing-external-command.md",
+      "phase": "compile",
+      "errorClass": "playbook_invalid",
+      "error": "external block has no command"
+    },
+    {
+      "id": "unsupported-other-selector",
+      "file": "fixtures/expected-reject/unsupported-other-selector.md",
+      "phase": "compile",
+      "errorClass": "playbook_invalid",
+      "error": "other is not a supported universal selector"
+    },
+    {
+      "id": "reader-stack-return",
+      "file": "fixtures/expected-reject/reader-stack-return.md",
+      "phase": "runtime",
+      "errorCode": "playbook_program_error",
+      "error": "external output contains protocol keys for continuation or stack"
+    },
+    {
+      "id": "missing-reference",
+      "file": "fixtures/expected-reject/missing-reference.md",
+      "phase": "runtime",
+      "errorCode": "playbook_ref_error",
+      "error": "reference name is absent from the current frame"
+    },
+    {
+      "id": "result-entry-no-history",
+      "file": "fixtures/expected-reject/result-entry-without-history.md",
+      "phase": "runtime",
+      "errorCode": "playbook_state",
+      "error": "result entry has no historical tool batch"
+    },
+    {
+      "id": "dead-goto-budget",
+      "file": "fixtures/expected-reject/dead-goto-budget.md",
+      "phase": "runtime",
+      "errorCode": "playbook_budget",
+      "error": "finite internal step budget is exhausted"
+    },
+    {
+      "id": "program-fault-hard-stop",
+      "file": "fixtures/expected-reject/program-fault-hard-stop.md",
+      "phase": "runtime",
+      "errorCode": "playbook_program_error",
+      "error": "nonzero program exit is a fault and cannot fall through"
+    },
+    {
+      "id": "label-on-tool-result",
+      "file": "fixtures/expected-reject/label-on-tool-result.md",
+      "phase": "compile",
+      "errorClass": "playbook_invalid",
+      "error": "labels name management units only; RV internals (toolResult) reject $label"
+    }
+  ]
+}

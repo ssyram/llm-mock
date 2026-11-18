@@ -1,0 +1,2002 @@
+{
+  "response-batching": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {}
+      },
+      "nodeKinds": [
+        "user",
+        "rv",
+        "rv",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "begin",
+              "pass": null
+            }
+          ]
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "",
+          "calls": [
+            {
+              "tool": "bash",
+              "args": {
+                "command": "printf first"
+              },
+              "expect": null,
+              "resultCases": null
+            },
+            {
+              "tool": "bash",
+              "args": {
+                "command": "printf second"
+              },
+              "expect": null,
+              "resultCases": null
+            }
+          ],
+          "aggregation": null
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "second response",
+          "calls": [
+            {
+              "tool": "bash",
+              "args": {
+                "command": "printf third"
+              },
+              "expect": null,
+              "resultCases": [
+                {
+                  "matcher": "otherwise",
+                  "value": true,
+                  "pass": null
+                }
+              ]
+            }
+          ],
+          "aggregation": null
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "finished",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [],
+      "labels": [],
+      "fileCalls": [],
+      "refs": []
+    },
+    "unitIds": [
+      "<root>"
+    ]
+  },
+  "affine-per-response": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {}
+      },
+      "nodeKinds": [
+        "user",
+        "rv",
+        "rv",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "begin",
+              "pass": null
+            }
+          ]
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "first response",
+          "calls": [
+            {
+              "tool": "bash",
+              "args": {
+                "command": "printf first"
+              },
+              "expect": null,
+              "resultCases": [
+                {
+                  "matcher": "otherwise",
+                  "value": true,
+                  "pass": "AFTER_FIRST"
+                }
+              ]
+            }
+          ],
+          "aggregation": null
+        },
+        {
+          "kind": "rv",
+          "label": "AFTER_FIRST",
+          "say": "second response",
+          "calls": [
+            {
+              "tool": "bash",
+              "args": {
+                "command": "printf second"
+              },
+              "expect": null,
+              "resultCases": [
+                {
+                  "matcher": "otherwise",
+                  "value": true,
+                  "pass": "AFTER_SECOND"
+                }
+              ]
+            }
+          ],
+          "aggregation": null
+        },
+        {
+          "kind": "rv",
+          "label": "AFTER_SECOND",
+          "say": "finished",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [],
+      "labels": [
+        {
+          "name": "AFTER_FIRST",
+          "nodeIndex": 2,
+          "nodeKind": "rv"
+        },
+        {
+          "name": "AFTER_SECOND",
+          "nodeIndex": 3,
+          "nodeKind": "rv"
+        }
+      ],
+      "fileCalls": [],
+      "refs": []
+    },
+    "unitIds": [
+      "<root>"
+    ]
+  },
+  "label-loop-dynamic-id": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {
+          "count": 0
+        }
+      },
+      "nodeKinds": [
+        "user",
+        "rv",
+        "segment",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "begin",
+              "pass": null
+            }
+          ]
+        },
+        {
+          "kind": "rv",
+          "label": "LOOP",
+          "say": "probe",
+          "calls": [
+            {
+              "tool": "bash",
+              "args": {
+                "command": "printf loop"
+              },
+              "expect": null,
+              "resultCases": null
+            }
+          ],
+          "aggregation": null
+        },
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "command",
+          "command": "node ../programs/counter-program.mjs",
+          "with": {
+            "count": "{{ vars.count }}",
+            "limit": 3,
+            "observationFile": "label-loop-observations.json"
+          },
+          "save": {
+            "count": "next"
+          },
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "again",
+              "pass": "LOOP"
+            },
+            {
+              "matcher": "exact",
+              "value": "done",
+              "pass": "DONE"
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "rv",
+          "label": "DONE",
+          "say": "finished",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [],
+      "labels": [
+        {
+          "name": "DONE",
+          "nodeIndex": 3,
+          "nodeKind": "rv"
+        },
+        {
+          "name": "LOOP",
+          "nodeIndex": 1,
+          "nodeKind": "rv"
+        }
+      ],
+      "fileCalls": [],
+      "refs": [
+        {
+          "nodeKind": "segment",
+          "label": null,
+          "valuePath": "with.count",
+          "scope": "vars",
+          "name": "count",
+          "wholeValue": true
+        }
+      ]
+    },
+    "unitIds": [
+      "<root>"
+    ]
+  },
+  "import-frame-main": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {
+          "caller": "root"
+        }
+      },
+      "nodeKinds": [
+        "user",
+        "segment",
+        "segment",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "begin",
+              "pass": null
+            }
+          ]
+        },
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "file",
+          "path": "./import-frame-child.md",
+          "with": {
+            "token": "first"
+          }
+        },
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "file",
+          "path": "./import-frame-child.md",
+          "with": {
+            "token": "second"
+          }
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "imports returned",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [],
+      "labels": [],
+      "fileCalls": [
+        {
+          "path": "./import-frame-child.md",
+          "with": {
+            "token": "first"
+          }
+        },
+        {
+          "path": "./import-frame-child.md",
+          "with": {
+            "token": "second"
+          }
+        }
+      ],
+      "refs": []
+    },
+    "unitIds": [
+      "<root>",
+      "import-frame-child.md"
+    ]
+  },
+  "import-frame-child": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {
+          "token": "default-token"
+        },
+        "vars": {
+          "local": "unset"
+        }
+      },
+      "nodeKinds": [
+        "segment",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "command",
+          "command": "node ../programs/frame-observer.mjs",
+          "with": {
+            "token": "{{ params.token }}",
+            "local": "{{ vars.local }}"
+          },
+          "save": {
+            "local": "next"
+          },
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": null
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "child {{ params.token }} local {{ vars.local }}",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [],
+      "labels": [],
+      "fileCalls": [],
+      "refs": [
+        {
+          "nodeKind": "rv",
+          "label": null,
+          "valuePath": "say",
+          "scope": "vars",
+          "name": "local",
+          "wholeValue": false
+        },
+        {
+          "nodeKind": "rv",
+          "label": null,
+          "valuePath": "say",
+          "scope": "params",
+          "name": "token",
+          "wholeValue": false
+        },
+        {
+          "nodeKind": "segment",
+          "label": null,
+          "valuePath": "with.local",
+          "scope": "vars",
+          "name": "local",
+          "wholeValue": true
+        },
+        {
+          "nodeKind": "segment",
+          "label": null,
+          "valuePath": "with.token",
+          "scope": "params",
+          "name": "token",
+          "wholeValue": true
+        }
+      ]
+    },
+    "unitIds": [
+      "<root>"
+    ]
+  },
+  "import-default-param": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {}
+      },
+      "nodeKinds": [
+        "user",
+        "segment",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "begin",
+              "pass": null
+            }
+          ]
+        },
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "file",
+          "path": "./import-frame-child.md",
+          "with": {}
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "default import returned",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [],
+      "labels": [],
+      "fileCalls": [
+        {
+          "path": "./import-frame-child.md",
+          "with": {}
+        }
+      ],
+      "refs": []
+    },
+    "unitIds": [
+      "<root>",
+      "import-frame-child.md"
+    ]
+  },
+  "recursive-import": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {
+          "remaining": 3
+        },
+        "vars": {
+          "next": 0
+        }
+      },
+      "nodeKinds": [
+        "segment",
+        "segment",
+        "segment"
+      ],
+      "nodes": [
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "command",
+          "command": "node ../programs/recursion-step.mjs",
+          "with": {
+            "remaining": "{{ params.remaining }}"
+          },
+          "save": {
+            "next": "next"
+          },
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "recurse",
+              "pass": "RECURSE"
+            },
+            {
+              "matcher": "exact",
+              "value": "done",
+              "pass": "COMPLETE"
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "segment",
+          "label": "RECURSE",
+          "form": "file",
+          "path": "./recursive-import.md",
+          "with": {
+            "remaining": "{{ vars.next }}"
+          }
+        },
+        {
+          "kind": "segment",
+          "label": "COMPLETE",
+          "form": "command",
+          "command": "node ../programs/branch-observer.mjs",
+          "with": {
+            "file": "recursion-complete.txt",
+            "mode": "level-{{ params.remaining }}"
+          },
+          "save": {},
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": null
+            }
+          ],
+          "volatile": false
+        }
+      ],
+      "matches": [],
+      "labels": [
+        {
+          "name": "COMPLETE",
+          "nodeIndex": 2,
+          "nodeKind": "segment"
+        },
+        {
+          "name": "RECURSE",
+          "nodeIndex": 1,
+          "nodeKind": "segment"
+        }
+      ],
+      "fileCalls": [
+        {
+          "path": "./recursive-import.md",
+          "with": {
+            "remaining": "{{ vars.next }}"
+          }
+        }
+      ],
+      "refs": [
+        {
+          "nodeKind": "segment",
+          "label": "COMPLETE",
+          "valuePath": "with.mode",
+          "scope": "params",
+          "name": "remaining",
+          "wholeValue": false
+        },
+        {
+          "nodeKind": "segment",
+          "label": "RECURSE",
+          "valuePath": "with.remaining",
+          "scope": "vars",
+          "name": "next",
+          "wholeValue": true
+        },
+        {
+          "nodeKind": "segment",
+          "label": null,
+          "valuePath": "with.remaining",
+          "scope": "params",
+          "name": "remaining",
+          "wholeValue": true
+        }
+      ]
+    },
+    "unitIds": [
+      "<root>"
+    ]
+  },
+  "value-reference": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {
+          "copy": "unset"
+        }
+      },
+      "nodeKinds": [
+        "user",
+        "segment",
+        "rv",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "begin",
+              "pass": null
+            }
+          ]
+        },
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "command",
+          "command": "node ../programs/structured-value.mjs",
+          "with": {},
+          "save": {
+            "copy": "payload"
+          },
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "ready",
+              "pass": null
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": null,
+          "calls": [
+            {
+              "tool": "inspect",
+              "args": {
+                "payload": "{{ vars.copy }}",
+                "caption": "payload={{ vars.copy }}",
+                "literal": "{{ vars.copy }}-{{ vars.copy }}"
+              },
+              "expect": null,
+              "resultCases": [
+                {
+                  "matcher": "otherwise",
+                  "value": true,
+                  "pass": null
+                }
+              ]
+            }
+          ],
+          "aggregation": null
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "finished",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [],
+      "labels": [],
+      "fileCalls": [],
+      "refs": [
+        {
+          "nodeKind": "rv",
+          "label": null,
+          "valuePath": "call:inspect.caption",
+          "scope": "vars",
+          "name": "copy",
+          "wholeValue": false
+        },
+        {
+          "nodeKind": "rv",
+          "label": null,
+          "valuePath": "call:inspect.literal",
+          "scope": "vars",
+          "name": "copy",
+          "wholeValue": false
+        },
+        {
+          "nodeKind": "rv",
+          "label": null,
+          "valuePath": "call:inspect.literal",
+          "scope": "vars",
+          "name": "copy",
+          "wholeValue": false
+        },
+        {
+          "nodeKind": "rv",
+          "label": null,
+          "valuePath": "call:inspect.payload",
+          "scope": "vars",
+          "name": "copy",
+          "wholeValue": true
+        }
+      ]
+    },
+    "unitIds": [
+      "<root>"
+    ]
+  },
+  "external-counter": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {
+          "count": 0
+        }
+      },
+      "nodeKinds": [
+        "user",
+        "segment",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "begin",
+              "pass": null
+            }
+          ]
+        },
+        {
+          "kind": "segment",
+          "label": "COUNT",
+          "form": "command",
+          "command": "node ../programs/counter-program.mjs",
+          "with": {
+            "count": "{{ vars.count }}",
+            "limit": 3,
+            "observationFile": "external-counter-observations.json"
+          },
+          "save": {
+            "count": "next"
+          },
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "again",
+              "pass": "COUNT"
+            },
+            {
+              "matcher": "exact",
+              "value": "done",
+              "pass": "COMPLETE"
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "rv",
+          "label": "COMPLETE",
+          "say": "count={{ vars.count }}",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [],
+      "labels": [
+        {
+          "name": "COMPLETE",
+          "nodeIndex": 2,
+          "nodeKind": "rv"
+        },
+        {
+          "name": "COUNT",
+          "nodeIndex": 1,
+          "nodeKind": "segment"
+        }
+      ],
+      "fileCalls": [],
+      "refs": [
+        {
+          "nodeKind": "rv",
+          "label": "COMPLETE",
+          "valuePath": "say",
+          "scope": "vars",
+          "name": "count",
+          "wholeValue": false
+        },
+        {
+          "nodeKind": "segment",
+          "label": "COUNT",
+          "valuePath": "with.count",
+          "scope": "vars",
+          "name": "count",
+          "wholeValue": true
+        }
+      ]
+    },
+    "unitIds": [
+      "<root>"
+    ]
+  },
+  "segment-aggregator": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {}
+      },
+      "nodeKinds": [
+        "user",
+        "segment",
+        "rv",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "skip",
+              "pass": "BATCH"
+            },
+            {
+              "matcher": "exact",
+              "value": "run",
+              "pass": null
+            }
+          ]
+        },
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "command",
+          "command": "node ../programs/segment-decision.mjs",
+          "with": {
+            "mode": "continue",
+            "observationFile": "segment-run.json"
+          },
+          "save": {},
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": null
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "rv",
+          "label": "BATCH",
+          "say": "batch",
+          "calls": [
+            {
+              "tool": "bash",
+              "args": {
+                "command": "printf left"
+              },
+              "expect": null,
+              "resultCases": [
+                {
+                  "matcher": "otherwise",
+                  "value": true,
+                  "pass": null
+                }
+              ]
+            },
+            {
+              "tool": "bash",
+              "args": {
+                "command": "printf right"
+              },
+              "expect": null,
+              "resultCases": [
+                {
+                  "matcher": "otherwise",
+                  "value": true,
+                  "pass": null
+                }
+              ]
+            }
+          ],
+          "aggregation": {
+            "command": "node ../programs/aggregate-results.mjs",
+            "with": {},
+            "save": {},
+            "cases": [
+              {
+                "matcher": "exact",
+                "value": "complete",
+                "pass": "COMPLETE"
+              }
+            ],
+            "volatile": false
+          }
+        },
+        {
+          "kind": "rv",
+          "label": "COMPLETE",
+          "say": "finished",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [],
+      "labels": [
+        {
+          "name": "BATCH",
+          "nodeIndex": 2,
+          "nodeKind": "rv"
+        },
+        {
+          "name": "COMPLETE",
+          "nodeIndex": 3,
+          "nodeKind": "rv"
+        }
+      ],
+      "fileCalls": [],
+      "refs": []
+    },
+    "unitIds": [
+      "<root>"
+    ]
+  },
+  "system-import-main": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {}
+      },
+      "nodeKinds": [
+        "user",
+        "rv",
+        "segment",
+        "segment",
+        "segment",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "begin",
+              "pass": null
+            }
+          ]
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "before import",
+          "calls": [],
+          "aggregation": null
+        },
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "file",
+          "path": "./system-import-child.md",
+          "with": {}
+        },
+        {
+          "kind": "segment",
+          "label": "MATCHED",
+          "form": "command",
+          "command": "node ../programs/branch-observer.mjs",
+          "with": {
+            "file": "system-branch.txt",
+            "mode": "matched"
+          },
+          "save": {},
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": "DONE"
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "segment",
+          "label": "UNMATCHED",
+          "form": "command",
+          "command": "node ../programs/branch-observer.mjs",
+          "with": {
+            "file": "system-branch.txt",
+            "mode": "unmatched"
+          },
+          "save": {},
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": "DONE"
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "rv",
+          "label": "DONE",
+          "say": "finished",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [
+        {
+          "at": 3,
+          "data": "system",
+          "cases": [
+            {
+              "matcher": "contains",
+              "value": "local-policy",
+              "pass": "MATCHED"
+            },
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": "UNMATCHED"
+            }
+          ]
+        }
+      ],
+      "labels": [
+        {
+          "name": "DONE",
+          "nodeIndex": 5,
+          "nodeKind": "rv"
+        },
+        {
+          "name": "MATCHED",
+          "nodeIndex": 3,
+          "nodeKind": "segment"
+        },
+        {
+          "name": "UNMATCHED",
+          "nodeIndex": 4,
+          "nodeKind": "segment"
+        }
+      ],
+      "fileCalls": [
+        {
+          "path": "./system-import-child.md",
+          "with": {}
+        }
+      ],
+      "refs": []
+    },
+    "unitIds": [
+      "<root>",
+      "system-import-child.md"
+    ]
+  },
+  "system-import-child": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {}
+      },
+      "nodeKinds": [
+        "segment",
+        "segment"
+      ],
+      "nodes": [
+        {
+          "kind": "segment",
+          "label": "CHILD_MATCHED",
+          "form": "command",
+          "command": "node ../programs/branch-observer.mjs",
+          "with": {
+            "file": "child-branch.txt",
+            "mode": "matched"
+          },
+          "save": {},
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": null
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "segment",
+          "label": "CHILD_SKIP",
+          "form": "command",
+          "command": "node ../programs/branch-observer.mjs",
+          "with": {
+            "file": "child-branch.txt",
+            "mode": "skipped"
+          },
+          "save": {},
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": null
+            }
+          ],
+          "volatile": false
+        }
+      ],
+      "matches": [
+        {
+          "at": 0,
+          "data": "system",
+          "cases": [
+            {
+              "matcher": "contains",
+              "value": "child-policy",
+              "pass": "CHILD_MATCHED"
+            },
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": "CHILD_SKIP"
+            }
+          ]
+        }
+      ],
+      "labels": [
+        {
+          "name": "CHILD_MATCHED",
+          "nodeIndex": 0,
+          "nodeKind": "segment"
+        },
+        {
+          "name": "CHILD_SKIP",
+          "nodeIndex": 1,
+          "nodeKind": "segment"
+        }
+      ],
+      "fileCalls": [],
+      "refs": []
+    },
+    "unitIds": [
+      "<root>"
+    ]
+  },
+  "reader-isolation": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {}
+      },
+      "nodeKinds": [
+        "user",
+        "segment",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "begin",
+              "pass": null
+            }
+          ]
+        },
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "command",
+          "command": "node ../programs/reader-advance.mjs",
+          "with": {},
+          "save": {},
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "advanced",
+              "pass": null
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "finished",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [],
+      "labels": [],
+      "fileCalls": [],
+      "refs": []
+    },
+    "unitIds": [
+      "<root>"
+    ]
+  },
+  "cache-hit-probe": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {}
+      },
+      "nodeKinds": [
+        "user",
+        "segment",
+        "rv",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "begin",
+              "pass": null
+            }
+          ]
+        },
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "command",
+          "command": "node ../programs/deterministic-probe.mjs",
+          "with": {
+            "observationFile": "cache-hit-count.json"
+          },
+          "save": {},
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": null
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "cache probe",
+          "calls": [
+            {
+              "tool": "bash",
+              "args": {
+                "command": "printf cache"
+              },
+              "expect": null,
+              "resultCases": [
+                {
+                  "matcher": "otherwise",
+                  "value": true,
+                  "pass": null
+                }
+              ]
+            }
+          ],
+          "aggregation": null
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "finished",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [],
+      "labels": [],
+      "fileCalls": [],
+      "refs": []
+    },
+    "unitIds": [
+      "<root>"
+    ]
+  },
+  "cache-volatile": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {}
+      },
+      "nodeKinds": [
+        "user",
+        "segment",
+        "segment",
+        "rv",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "begin",
+              "pass": null
+            }
+          ]
+        },
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "command",
+          "command": "node ../programs/deterministic-probe.mjs",
+          "with": {
+            "observationFile": "cold-hot.json"
+          },
+          "save": {},
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": null
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "command",
+          "command": "node ../programs/volatile-probe.mjs",
+          "with": {
+            "observationFile": "volatile-count.json"
+          },
+          "save": {},
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": null
+            }
+          ],
+          "volatile": true
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "volatile probe",
+          "calls": [
+            {
+              "tool": "bash",
+              "args": {
+                "command": "printf volatile"
+              },
+              "expect": null,
+              "resultCases": [
+                {
+                  "matcher": "otherwise",
+                  "value": true,
+                  "pass": null
+                }
+              ]
+            }
+          ],
+          "aggregation": null
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "finished",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [],
+      "labels": [],
+      "fileCalls": [],
+      "refs": []
+    },
+    "unitIds": [
+      "<root>"
+    ]
+  },
+  "ordered-cases": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {}
+      },
+      "nodeKinds": [
+        "user",
+        "segment",
+        "segment",
+        "segment",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "contains",
+              "value": "begin",
+              "pass": "FIRST"
+            },
+            {
+              "matcher": "any",
+              "value": true,
+              "pass": "SECOND"
+            },
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": "THIRD"
+            }
+          ]
+        },
+        {
+          "kind": "segment",
+          "label": "FIRST",
+          "form": "command",
+          "command": "node ../programs/branch-observer.mjs",
+          "with": {
+            "file": "ordered-branch.txt",
+            "mode": "first"
+          },
+          "save": {},
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": "DONE"
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "segment",
+          "label": "SECOND",
+          "form": "command",
+          "command": "node ../programs/branch-observer.mjs",
+          "with": {
+            "file": "ordered-branch.txt",
+            "mode": "second"
+          },
+          "save": {},
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": "DONE"
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "segment",
+          "label": "THIRD",
+          "form": "command",
+          "command": "node ../programs/branch-observer.mjs",
+          "with": {
+            "file": "ordered-branch.txt",
+            "mode": "third"
+          },
+          "save": {},
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": "DONE"
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "rv",
+          "label": "DONE",
+          "say": "finished",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [],
+      "labels": [
+        {
+          "name": "DONE",
+          "nodeIndex": 4,
+          "nodeKind": "rv"
+        },
+        {
+          "name": "FIRST",
+          "nodeIndex": 1,
+          "nodeKind": "segment"
+        },
+        {
+          "name": "SECOND",
+          "nodeIndex": 2,
+          "nodeKind": "segment"
+        },
+        {
+          "name": "THIRD",
+          "nodeIndex": 3,
+          "nodeKind": "segment"
+        }
+      ],
+      "fileCalls": [],
+      "refs": []
+    },
+    "unitIds": [
+      "<root>"
+    ]
+  },
+  "compaction-classifier": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {}
+      },
+      "nodeKinds": [
+        "user",
+        "segment",
+        "segment",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "any",
+              "value": true,
+              "pass": null
+            }
+          ]
+        },
+        {
+          "kind": "segment",
+          "label": "CLASSIFIED",
+          "form": "command",
+          "command": "node ../programs/branch-observer.mjs",
+          "with": {
+            "file": "compaction-branch.txt",
+            "mode": "classified"
+          },
+          "save": {},
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": "DONE"
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "segment",
+          "label": "ORDINARY",
+          "form": "command",
+          "command": "node ../programs/branch-observer.mjs",
+          "with": {
+            "file": "compaction-branch.txt",
+            "mode": "ordinary"
+          },
+          "save": {},
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": "DONE"
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "rv",
+          "label": "DONE",
+          "say": "finished",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [
+        {
+          "at": 1,
+          "data": "compaction",
+          "cases": [
+            {
+              "matcher": "judge",
+              "value": "node ../programs/compaction-classifier.mjs",
+              "pass": "CLASSIFIED"
+            },
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": "ORDINARY"
+            }
+          ]
+        }
+      ],
+      "labels": [
+        {
+          "name": "CLASSIFIED",
+          "nodeIndex": 1,
+          "nodeKind": "segment"
+        },
+        {
+          "name": "DONE",
+          "nodeIndex": 3,
+          "nodeKind": "rv"
+        },
+        {
+          "name": "ORDINARY",
+          "nodeIndex": 2,
+          "nodeKind": "segment"
+        }
+      ],
+      "fileCalls": [],
+      "refs": []
+    },
+    "unitIds": [
+      "<root>"
+    ]
+  },
+  "pi-loop-child": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {
+          "token": 0
+        },
+        "vars": {
+          "local": "unset"
+        }
+      },
+      "nodeKinds": [
+        "segment",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "command",
+          "command": "node ../programs/frame-observer.mjs",
+          "with": {
+            "token": "{{ params.token }}",
+            "local": "{{ vars.local }}"
+          },
+          "save": {
+            "local": "next"
+          },
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": null
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "",
+          "calls": [
+            {
+              "tool": "bash",
+              "args": {
+                "command": "echo '{{ params.token }}|{{ vars.local }}' >> loop-tools.txt"
+              },
+              "expect": null,
+              "resultCases": null
+            }
+          ],
+          "aggregation": null
+        }
+      ],
+      "matches": [],
+      "labels": [],
+      "fileCalls": [],
+      "refs": [
+        {
+          "nodeKind": "rv",
+          "label": null,
+          "valuePath": "call:bash.command",
+          "scope": "vars",
+          "name": "local",
+          "wholeValue": false
+        },
+        {
+          "nodeKind": "rv",
+          "label": null,
+          "valuePath": "call:bash.command",
+          "scope": "params",
+          "name": "token",
+          "wholeValue": false
+        },
+        {
+          "nodeKind": "segment",
+          "label": null,
+          "valuePath": "with.local",
+          "scope": "vars",
+          "name": "local",
+          "wholeValue": true
+        },
+        {
+          "nodeKind": "segment",
+          "label": null,
+          "valuePath": "with.token",
+          "scope": "params",
+          "name": "token",
+          "wholeValue": true
+        }
+      ]
+    },
+    "unitIds": [
+      "<root>"
+    ]
+  },
+  "representative-pi-flow": {
+    "root": {
+      "id": "<root>",
+      "front": {
+        "params": {},
+        "vars": {
+          "loopCount": 0
+        }
+      },
+      "nodeKinds": [
+        "user",
+        "rv",
+        "segment",
+        "segment",
+        "segment",
+        "rv",
+        "rv",
+        "user",
+        "rv"
+      ],
+      "nodes": [
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "start",
+              "pass": null
+            }
+          ]
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "prepare",
+          "calls": [
+            {
+              "tool": "bash",
+              "args": {
+                "command": "printf alpha > alpha.txt"
+              },
+              "expect": null,
+              "resultCases": null
+            },
+            {
+              "tool": "bash",
+              "args": {
+                "command": "printf beta > beta.txt"
+              },
+              "expect": null,
+              "resultCases": null
+            }
+          ],
+          "aggregation": null
+        },
+        {
+          "kind": "segment",
+          "label": "LOOP",
+          "form": "file",
+          "path": "./pi-loop-child.md",
+          "with": {
+            "token": "{{ vars.loopCount }}"
+          }
+        },
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "command",
+          "command": "node ../programs/counter-program.mjs",
+          "with": {
+            "count": "{{ vars.loopCount }}",
+            "limit": 3,
+            "observationFile": "pi-loop-observations.json"
+          },
+          "save": {
+            "loopCount": "next"
+          },
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "again",
+              "pass": "LOOP"
+            },
+            {
+              "matcher": "exact",
+              "value": "done",
+              "pass": null
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "segment",
+          "label": null,
+          "form": "command",
+          "command": "node ../programs/segment-decision.mjs",
+          "with": {
+            "mode": "continue",
+            "observationFile": "representative-segment.json"
+          },
+          "save": {},
+          "cases": [
+            {
+              "matcher": "otherwise",
+              "value": true,
+              "pass": null
+            }
+          ],
+          "volatile": false
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "",
+          "calls": [
+            {
+              "tool": "bash",
+              "args": {
+                "command": "test -f alpha.txt && test -f beta.txt && test \"$(wc -l < loop-tools.txt)\" -eq 3 && printf verified"
+              },
+              "expect": null,
+              "resultCases": [
+                {
+                  "matcher": "contains",
+                  "value": "verified",
+                  "pass": null
+                }
+              ]
+            }
+          ],
+          "aggregation": {
+            "command": "node ../programs/aggregate-results.mjs",
+            "with": {},
+            "save": {},
+            "cases": [
+              {
+                "matcher": "exact",
+                "value": "complete",
+                "pass": null
+              }
+            ],
+            "volatile": false
+          }
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "ready for confirmation",
+          "calls": [],
+          "aggregation": null
+        },
+        {
+          "kind": "user",
+          "label": null,
+          "cases": [
+            {
+              "matcher": "exact",
+              "value": "continue",
+              "pass": null
+            }
+          ]
+        },
+        {
+          "kind": "rv",
+          "label": null,
+          "say": "complete",
+          "calls": [],
+          "aggregation": null
+        }
+      ],
+      "matches": [
+        {
+          "at": 0,
+          "data": "system",
+          "cases": [
+            {
+              "matcher": "contains",
+              "value": "local-contract",
+              "pass": null
+            }
+          ]
+        }
+      ],
+      "labels": [
+        {
+          "name": "LOOP",
+          "nodeIndex": 2,
+          "nodeKind": "segment"
+        }
+      ],
+      "fileCalls": [
+        {
+          "path": "./pi-loop-child.md",
+          "with": {
+            "token": "{{ vars.loopCount }}"
+          }
+        }
+      ],
+      "refs": [
+        {
+          "nodeKind": "segment",
+          "label": null,
+          "valuePath": "with.count",
+          "scope": "vars",
+          "name": "loopCount",
+          "wholeValue": true
+        },
+        {
+          "nodeKind": "segment",
+          "label": "LOOP",
+          "valuePath": "with.token",
+          "scope": "vars",
+          "name": "loopCount",
+          "wholeValue": true
+        }
+      ]
+    },
+    "unitIds": [
+      "<root>",
+      "pi-loop-child.md"
+    ]
+  }
+}

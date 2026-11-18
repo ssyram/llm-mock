@@ -1,0 +1,24 @@
+{
+  "steps": [
+    {"role":"user","text":"start"},
+    {"role":"response","say":"prepare","calls":[
+      {"name":"bash","arguments":{"command":"printf alpha > alpha.txt"},"result":{"any":true}},
+      {"name":"bash","arguments":{"command":"printf beta > beta.txt"},"result":{"any":true}}
+    ]},
+    {"role":"response","say":"","calls":[
+      {"name":"bash","arguments":{"command":"echo '0|seen:0' >> loop-tools.txt"},"result":{"any":true}}
+    ]},
+    {"role":"response","say":"","calls":[
+      {"name":"bash","arguments":{"command":"echo '1|seen:1' >> loop-tools.txt"},"result":{"any":true}}
+    ]},
+    {"role":"response","say":"","calls":[
+      {"name":"bash","arguments":{"command":"echo '2|seen:2' >> loop-tools.txt"},"result":{"any":true}}
+    ]},
+    {"role":"response","say":"","calls":[
+      {"name":"bash","arguments":{"command":"test -f alpha.txt && test -f beta.txt && test \"$(wc -l < loop-tools.txt)\" -eq 3 && printf verified"},"result":{"contains":"verified"}}
+    ]},
+    {"role":"response","say":"ready for confirmation","calls":[]},
+    {"role":"user","text":"continue"},
+    {"role":"response","say":"complete","calls":[]}
+  ]
+}

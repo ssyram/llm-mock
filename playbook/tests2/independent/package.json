@@ -1,0 +1,14 @@
+{
+  "name": "playbook-next-independent-contract-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/fixture-contract.test.mjs tests/counter-program.test.mjs tests/reference-trace.test.mjs tests/prefix-cache.test.mjs tests/cli-flags.test.mjs tests/vendor-projection.test.mjs",
+    "test:api": "node --test tests/api-conformance.test.mjs",
+    "test:target": "node --test tests/target-runtime.test.mjs tests/target-language.test.mjs tests/target-errors.test.mjs tests/target-cache.test.mjs tests/target-cache-rework.test.mjs",
+    "test:pi": "node jobs/run-real-pi.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

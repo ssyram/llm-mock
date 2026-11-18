@@ -1,0 +1,13 @@
+{
+  "boundToRealTarget": [
+    "shared-cache continuation avoids deterministic replay while no-cache cold rebuild may rerun",
+    "system/tools/request.options changes produce a cold namespace",
+    "external program file content changes invalidate cached continuation",
+    "volatile checkpoint is not reused as business state",
+    "restore and cleanup expire at the 300000ms idle boundary",
+    "two live requestId leases protect one key independently beyond TTL",
+    "release of one request leaves the other lease protective",
+    "scheduleCleanup dispatches the real independent worker and repeated scheduling is single-flight"
+  ],
+  "adapterRule": "The subprocess adapter only calls real lang2/cache.mjs exports; namespace behavior is tested through real mock2 requests and dependency side effects."
+}
