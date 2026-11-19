@@ -6,3 +6,11 @@
 4. preexisting 与迁移引起严格分账：新位置失败的测试先在旧位置原样复跑对照；易失 /tmp 证据缺失导致的失败保持原断言（响亮失败/显式 skip），绝不弱化断言或自动换路径造绿。
 5. 旧入口只留薄 wrapper（旧 mock.mjs 路径继续可挂载），实现不双权威；旧实验目录保原证据与取证工具，不删历史工件。
 6. 运行产物进 target/test-artifacts 类 gitignore 目录，不进版本树；私有证据（DB/key/原始 capture/实验日志）永不入 repo。
+
+# 跨平台（2026-11-19 Linux 迁移轮用户纠正原则）
+
+范围：针对 `integrations/` 下的用例剧本与 adapter；mock server 与 playbook 引擎本身未发现平台问题。
+
+7. 用例剧本与 adapter 只依赖已入库代码和显式输入：不得硬编码某台开发机的绝对路径（如 `/Users/<name>/...`），不得 import 未入库的私有库（如旧 `pilot.*` 来自 `.pi/research/...`）。外部产品根目录一律经参数/环境变量传入，缺即响亮失败。moc18a 曾因此在新 Linux 机完全不可运行。
+8. 用例只用通用 POSIX / Linux+macOS 共有的能力：Python 标准库优先于平台命令；不用 macOS 专有选项或 BSD-only 命令写法，可执行文件经 PATH 或显式参数解析（同类问题曾在相邻实验包 hc-fsm-reference 出现：`cp -c`、`/usr/bin/git` 固定路径）。AF_UNIX 路径长度按两平台中较小上限（macOS 104 字节）检查。
+9. 新集成至少在 Linux 上实跑一次再报告可用；只在一个平台跑绿不得写成“可运行”。
