@@ -152,13 +152,10 @@ def main():
             for note in notes:
                 stream.write(json.dumps({"task": tag["task"], "phase": tag["phase"], **note},
                                         ensure_ascii=False) + "\n")
-    elif pending:
-        if boundary == len(messages) and frontier_wait_issuance(state, decision):
-            window = capture_wait_window(lambda: time.sleep(pending / 1e9), pending)
-            persist_worker_observation(env["records"], tag["task"], tag["phase"], session,
-                                       {**window, "wait_call_id": decision.get("id")})
-        else:
-            time.sleep(pending / 1e9)
+    elif pending and boundary == len(messages) and frontier_wait_issuance(state, decision):
+        window = capture_wait_window(lambda: time.sleep(pending / 1e9), pending)
+        persist_worker_observation(env["records"], tag["task"], tag["phase"], session,
+                                   {**window, "wait_call_id": decision.get("id")})
     print(json.dumps(assistant_reply(decision, jump), ensure_ascii=False))
 
 

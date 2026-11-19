@@ -208,11 +208,10 @@ class WorkerObservationFrontierTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             records = Path(tmp) / 'records'
             records.mkdir()
-            # pointer=7 的 resume 最终 step 重放到历史 submit 回显（jump=9<len=11）。
-            run_worker(records, 5, pointer=7)
-            self.assertIsNone(self.timing(records))
-            # pointer=3 的 resume 最终 step 重放到历史等待回显（jump=5<len=7），不捕获窗口。
-            run_worker(records, 3, pointer=3)
+            with patch.object(worker_step.time, 'sleep') as sleep:
+                run_worker(records, 5, pointer=7)  # 历史 submit 回显
+                run_worker(records, 3, pointer=3)  # 历史等待回显
+            sleep.assert_not_called()
             self.assertIsNone(self.timing(records))
 
     def test_frontier_wait_submit_and_terminal_are_written_with_identity(self):
@@ -230,7 +229,9 @@ class WorkerObservationFrontierTest(unittest.TestCase):
             self.assertEqual(document["wait_planned_ns"], PLANNED_NS)
             self.assertGreaterEqual(document["wait_end_ns"] - document["wait_start_ns"], 1_000_000)
             self.assertGreater(document["wait_actual_mono_ns"], 0)
-            run_worker(records, 4, pointer=9)
+            with patch.object(worker_step.time, 'sleep') as sleep:
+                run_worker(records, 4, pointer=9)
+            sleep.assert_not_called()
             document = self.timing(records)
             self.assertEqual(document["submit_call_id"], "w1.s5")
             self.assertIsInstance(document["submit_start_ns"], int)
