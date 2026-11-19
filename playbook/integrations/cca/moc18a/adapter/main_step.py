@@ -21,6 +21,7 @@ sys.path[:0] = [os.path.dirname(os.path.abspath(__file__))]
 from lane_context import (build_payload, decision_matches, fault_reply, fixed_default_level, lane_env,
                           request_boundaries, TapeLedger, trace_handler)
 from phase_entry import phase_entry
+from timing_capture import persist_main_gate
 
 from pilot.case_body import pilot_budgets, pilot_level
 from pilot.machine import PilotMainScript
@@ -115,9 +116,21 @@ def next_decision(raw, messages, pointer, script):
                 script.compacted()
     boundary = pointer if walk else (jump if resume else len(messages))
     script.entry_context["replay"] = walk
+    timeline_before = set(script.stats["timeline"])
+    consumed_before = len(script.consumed)
     decision = script.step(build_payload(raw, boundary))
+    # resume 的最终 step 可能仍重放历史边界、重放循环也会重建旧门时间线：只有真实前沿
+    # （boundary==消息数）上由最终 step 新消费回执才新产出门键；缺新消费身份宁可缺证据。
+    frontier_gates = []
+    if boundary == len(messages) and len(script.consumed) > consumed_before:
+        consumed_now = script.consumed[-1]
+        for phase, gate in (("analysis", "analysis_final_gate_ns"), ("eqclass", "eqclass_final_gate_ns")):
+            if gate in script.stats["timeline"] and gate not in timeline_before:
+                frontier_gates.append({"phase": phase, "gate": gate,
+                                       "at_ns": script.stats["timeline"][gate], "call_id": consumed_now})
     return decision, jump, {"case": "resume" if resume else "walk" if walk else "frontier",
                             "pointer": pointer, "boundary": boundary, "jump": jump,
+                            "frontier_gates": frontier_gates,
                             "verified_call_ids": [messages[b].get("content", [{}])[0].get("id")
                                                   for b in request_boundaries(messages) if b <= upto]}
 
@@ -138,6 +151,9 @@ def main():
     para = parse_para(messages)
     try:
         decision, jump, trace = next_decision(raw, messages, envelope["pointer"], script)
+        for gate in trace.get("frontier_gates") or ():
+            persist_main_gate(env["records"], gate["phase"], gate["at_ns"], gate["call_id"],
+                              env["root_session"])
         trace_handler(env, ((raw.get("request") or {}).get("options") or {}).get("sessionId"),
                       {**trace, "decision": {"action": decision.get("action"), "id": decision.get("id"),
                                              "name": decision.get("name")},

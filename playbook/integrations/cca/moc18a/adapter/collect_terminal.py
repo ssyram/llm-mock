@@ -6,9 +6,10 @@ from pathlib import Path
 from types import SimpleNamespace
 
 ORIGINAL = Path('/Users/ssyram/workspace/work-fv/c-code-verify/.local/analysis-decouple/.pi/moc18a')
-sys.path.insert(0, str(ORIGINAL))
+sys.path[:0] = [str(ORIGINAL), str(Path(__file__).resolve().parent)]
 from collect_run import collect
 from pilot.worker_wait import PilotDeltaBook
+from timing_capture import apply_worker_timing, load_gate_timeline
 
 REPLAY_TIMES = {'first_request_ns', 'first_tool_ns', 'sleep_start_ns', 'sleep_end_ns',
                 'submit_start_ns', 'terminal_ns'}
@@ -75,6 +76,8 @@ def collect_terminal(home, root, lane, graph, level, budgets, seed, main_done=Tr
     paths = sorted((root / 'records').glob('worker-*.json'), key=lambda path: path.stat().st_mtime_ns)
     documents = [json.loads(path.read_text(encoding='utf-8')) for path in paths]
     records = actual_worker_records(documents)
+    for record in records:
+        apply_worker_timing(record, root / 'records')
     counts = {}
     for record in records:
         phase = record.get('phase')
@@ -87,7 +90,9 @@ def collect_terminal(home, root, lane, graph, level, budgets, seed, main_done=Tr
     faults = [first_fault] if first_fault else []
     machine = SimpleNamespace(
         workers=WorkerEvidence(records), ledger=SimpleNamespace(counts=counts), faults=faults,
-        main=SimpleNamespace(done=main_done, stats={'timeline': {}, 'reserves': [], 'inflight_peak': None}),
+        main=SimpleNamespace(done=main_done,
+                             stats={'timeline': load_gate_timeline(root / 'records'), 'reserves': [],
+                                    'inflight_peak': None}),
         fsm_slot_summary=lambda: {'available': False}, fsm_slot_events=[])
     deltas = DeltaEvidence(level, seed, graph['artifact'], budgets, records)
     staging = root / 'collection'

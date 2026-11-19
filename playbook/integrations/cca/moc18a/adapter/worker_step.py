@@ -16,6 +16,8 @@ import time
 sys.path[:0] = [os.path.dirname(os.path.abspath(__file__))]
 from lane_context import (build_payload, decision_matches, fault_reply, fixed_default_level, lane_env,
                           request_boundaries, TapeLedger, trace_handler)
+from timing_capture import (capture_wait_window, frontier_submit_issuance, frontier_wait_issuance,
+                            persist_worker_observation)
 
 from pilot.case_body import pilot_budgets, pilot_level
 from pilot.worker_wait import PilotDeltaBook, PilotWorkerBook
@@ -71,6 +73,7 @@ def assistant_reply(decision, jump):
 
 
 def main():
+    entered_ns = time.time_ns()
     envelope = json.loads(sys.stdin.read())
     raw = json.loads(open(envelope["transcript"], encoding="utf-8").read())
     messages = ((raw.get("request") or {}).get("context") or {}).get("messages") or []
@@ -120,7 +123,14 @@ def main():
         state = workers.by_session.get(payload.get("session_id")) or \
             next(iter([s for s in workers.by_session.values() if s.label == tag["task"]]), None)
         pending = state.record.pop("pending_wait_ns", None) if (state and not walk) else None
-        trace_handler(env, payload.get("session_id"), {
+        session = payload.get("session_id")
+        if not boundaries:
+            persist_worker_observation(env["records"], tag["task"], tag["phase"], session,
+                                       {"first_request_ns": entered_ns})
+        if boundary == len(messages) and frontier_submit_issuance(state, decision):
+            persist_worker_observation(env["records"], tag["task"], tag["phase"], session,
+                                       {"submit_start_ns": time.time_ns(), "submit_call_id": decision.get("id")})
+        trace_handler(env, session, {
             "tag": tag, "case": "resume" if resume else "walk" if walk else "frontier",
             "pointer": pointer, "boundary": boundary, "jump": jump,
             "verified_call_ids": [messages[b].get("content", [{}])[0].get("id")
@@ -132,6 +142,9 @@ def main():
         sys.stderr.write(f"worker_step {fault.kind}: {fault}\n")
         raise SystemExit(3)
     if decision.get("action") == "text":
+        if boundary == len(messages):
+            persist_worker_observation(env["records"], tag["task"], tag["phase"], session,
+                                       {"terminal_ns": time.time_ns()})
         (env["records"] / ("worker-%s.json" % tag["task"])).write_text(json.dumps(
             {"tag": tag, "records": workers.records(), "tape_notes": notes}, ensure_ascii=False, indent=1),
             encoding="utf-8")
@@ -140,7 +153,12 @@ def main():
                 stream.write(json.dumps({"task": tag["task"], "phase": tag["phase"], **note},
                                         ensure_ascii=False) + "\n")
     elif pending:
-        time.sleep(pending / 1e9)
+        if boundary == len(messages) and frontier_wait_issuance(state, decision):
+            window = capture_wait_window(lambda: time.sleep(pending / 1e9), pending)
+            persist_worker_observation(env["records"], tag["task"], tag["phase"], session,
+                                       {**window, "wait_call_id": decision.get("id")})
+        else:
+            time.sleep(pending / 1e9)
     print(json.dumps(assistant_reply(decision, jump), ensure_ascii=False))
 
 
