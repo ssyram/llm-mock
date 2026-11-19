@@ -105,7 +105,12 @@ def main():
     locks.mkdir(exist_ok=True)
     release_slots(locks, raw)
     playbook = str(DOMAIN / {"main": "main.md", "worker": "worker.md", "aux": "aux.md"}[kind])
-    argv = ["node", MOCK2, "--playbook", playbook, "--no-cache", "--judge-timeout-ms", "120000"]
+    argv = ["node", MOCK2, "--playbook", playbook, "--judge-timeout-ms", "120000"]
+    if kind == "aux":
+        # 同一个 aux 请求的门禁判定可以随主会话落盘状态变化。
+        argv.append("--no-cache")
+    else:
+        argv.extend(["--cache-dir", str(lane / "mock2-cache")])
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
     started = time.monotonic()
     child = subprocess.run(argv, input=data, capture_output=True, cwd=str(DOMAIN), env=env)
