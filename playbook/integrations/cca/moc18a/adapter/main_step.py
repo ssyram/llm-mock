@@ -1,5 +1,5 @@
-"""Main Segment 业务程序：消费 transcript（阅读 pointer=消费前沿），按冻结
-PilotMainScript 确定性重放已回显决策并核对，然后给出下一步真实决策。
+"""Main Segment 业务程序：消费 transcript（阅读 pointer=消费前沿），按已入库
+MainScript（cca_bench mock_main）确定性重放已回显决策并核对，然后给出下一步真实决策。
 
 入口三态（由 pointer P 与其后真实消息结构判定，冷热重放同判定）：
 - P 处是自己回显且其后紧跟回执 ⇒ resume：重放含 P，产出下一决策，并返回
@@ -23,9 +23,9 @@ from lane_context import (build_payload, decision_matches, fault_reply, fixed_de
 from phase_entry import phase_entry
 from timing_capture import persist_main_gate
 
-from pilot.case_body import pilot_budgets, pilot_level
-from pilot.machine import PilotMainScript
-from pilot.worker_wait import PilotDeltaBook, PilotWorkerBook
+from case_body import pilot_budgets, pilot_level
+from worker_wait import WaitDeltaBook, WaitWorkerBook
+from main_intent import IntentMainScript
 from cca_bench.suites.mock_faults import Injection
 from cca_bench.suites.mock_results import MockFault
 
@@ -49,10 +49,10 @@ def build_script(env, ledger):
     level = fixed_default_level(spec, pilot_level(spec["parallel"], spec["batch"], mock["max_new_nodes"]))
     budgets = pilot_budgets(level, len(spec["nodes"]), len(spec["edges"]), 1800,
                             mock["max_new_nodes"], mock["max_new_facts"])
-    deltas = PilotDeltaBook(level, spec["seed"], len(spec["nodes"]), len(spec["edges"]), budgets)
-    workers = PilotWorkerBook(level.name, deltas, ledger, env["workspace"], env["root_session"], "product", Injection())
+    deltas = WaitDeltaBook(level, spec["seed"], len(spec["nodes"]), len(spec["edges"]), budgets)
+    workers = WaitWorkerBook(level.name, deltas, ledger, env["workspace"], env["root_session"], "product", Injection())
     context = {"replay": False}
-    script = PilotMainScript(workers, lambda phase: phase_entry(env, phase, replay=context["replay"]),
+    script = IntentMainScript(workers, lambda phase: phase_entry(env, phase, replay=context["replay"]),
                              "BENCH-TAG role=main phase=analysis task=main kind=main", Injection())
     script.entry_context = context
     script.root_session = env["root_session"]

@@ -62,7 +62,6 @@ test("真实 C 源物化走生产 write_c_sources 路径且只写私有 workspac
   const dir = mkdtempSync(join("/tmp", "pb2-specwrite-"));
   const script = `
 import sys, json
-sys.path[:0] = ["/Users/ssyram/workspace/work-fv/c-code-verify/.local/analysis-decouple/.local/cca-newtree-sut-20261117/scripts"]
 import importlib.util
 mod = importlib.util.spec_from_file_location("sg", ${JSON.stringify(specGraph)})
 sg = importlib.util.module_from_spec(mod); mod.loader.exec_module(sg)

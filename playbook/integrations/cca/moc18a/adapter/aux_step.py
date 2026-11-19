@@ -1,7 +1,7 @@
 """aux Segment 业务程序：title / Stop 门 / compaction 三类旁路模型请求。
 
-分类逐字对齐冻结 ScenarioMachine._classify；Main 状态由本会话 transcript 重放
-PilotMainScript 重建（gate 的 waiting/active 与 compaction 的账本计数同源）。
+分类逐字对齐入库 ScenarioMachine._classify；Main 状态由本会话 transcript 重放
+MainScript（cca_bench mock_main）重建（gate 的 waiting/active 与 compaction 的账本计数同源）。
 """
 import json
 import os
@@ -11,9 +11,9 @@ sys.path[:0] = [os.path.dirname(os.path.abspath(__file__))]
 from lane_context import build_payload, decision_matches, fault_reply, fixed_default_level, lane_env, request_boundaries, TapeLedger
 from phase_entry import phase_entry
 
-from pilot.case_body import pilot_budgets, pilot_level
-from pilot.machine import PilotMainScript
-from pilot.worker_wait import PilotDeltaBook, PilotWorkerBook
+from case_body import pilot_budgets, pilot_level
+from worker_wait import WaitDeltaBook, WaitWorkerBook
+from main_intent import IntentMainScript
 from cca_bench.suites.mock_faults import Injection
 from cca_bench.suites.mock_results import MockFault
 
@@ -23,9 +23,9 @@ def build_script(env, ledger):
     level = fixed_default_level(spec, pilot_level(spec["parallel"], spec["batch"], mock["max_new_nodes"]))
     nodes, edges = len(spec["nodes"]), len(spec["edges"])
     budgets = pilot_budgets(level, nodes, edges, 1800, mock["max_new_nodes"], mock["max_new_facts"])
-    deltas = PilotDeltaBook(level, spec["seed"], nodes, edges, budgets)
-    workers = PilotWorkerBook(level.name, deltas, ledger, env["workspace"], env["root_session"], "product", Injection())
-    return PilotMainScript(workers, lambda phase: phase_entry(env, phase, replay=True),
+    deltas = WaitDeltaBook(level, spec["seed"], nodes, edges, budgets)
+    workers = WaitWorkerBook(level.name, deltas, ledger, env["workspace"], env["root_session"], "product", Injection())
+    return IntentMainScript(workers, lambda phase: phase_entry(env, phase, replay=True),
                            "BENCH-TAG role=main phase=analysis task=main kind=main", Injection())
 
 

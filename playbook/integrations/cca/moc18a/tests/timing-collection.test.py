@@ -9,9 +9,9 @@ from types import SimpleNamespace
 
 sys.dont_write_bytecode = True
 DOMAIN = Path(__file__).resolve().parents[1]
-PROJECT = Path('/Users/ssyram/workspace/work-fv/c-code-verify/.local/analysis-decouple')
-sys.path[:0] = [str(DOMAIN), str(PROJECT / '.local/cca-newtree-sut-20261117/scripts'),
-                str(PROJECT / '.pi/research/gate-latency-mock-148')]
+from cca_scripts_path import cca_scripts
+
+sys.path[:0] = [str(DOMAIN), str(cca_scripts())]
 
 from adapter.timing_capture import (apply_worker_timing, capture_wait_window, frontier_submit_issuance,
                                     frontier_wait_issuance, load_gate_timeline, main_gate_path,

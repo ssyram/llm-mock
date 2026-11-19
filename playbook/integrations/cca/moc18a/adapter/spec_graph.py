@@ -2,19 +2,32 @@
 
 - 复用冻结 Builder/ShapeArtifact 与 write_c_sources 生产物化路径：节点名/边
   就是 spec 数据本身，同数量不同拓扑不会被数量核对掩盖。
-- seed 只进 Mock 选择（PilotDeltaBook），绝不影响图形状；artifact id 中的
+- seed 只进 Mock 选择（DeltaBook 抽样），绝不影响图形状；artifact id 中的
   seed 仅作溯源字符串。
 - 数据边界如实：本 lane 只支持无 entries 的全集图（spec.entries 非 null ⇒
   明确拒绝，不伪造闭包/桥边语义）；spec 中任何路径字段只当数据读，绝不当
   写入目的地，源材料始终落私有 workspace。
 """
+import os
 import re
 import sys
 from pathlib import Path
 
-PROJECT = Path("/Users/ssyram/workspace/work-fv/c-code-verify/.local/analysis-decouple")
-sys.path[:0] = [str(PROJECT / ".local/cca-newtree-sut-20261117/scripts"),
-                str(PROJECT / ".pi/research/gate-latency-mock-148")]
+
+def _cca_scripts():
+    """同 lane_context.cca_scripts_path；本文件可被 spec_from_file_location 直接
+    加载，不能依赖包内导入，故自含一份解析（CCA_NEW_CCA_HOME/CCA_HOME）。"""
+    for key in ("CCA_NEW_CCA_HOME", "CCA_HOME"):
+        value = os.environ.get(key)
+        if value:
+            scripts = Path(value) / "scripts"
+            if not (scripts / "cca_bench").is_dir():
+                raise SystemExit("moc18a: %s=%s carries no scripts/cca_bench" % (key, value))
+            return scripts
+    raise SystemExit("moc18a: set CCA_NEW_CCA_HOME (or CCA_HOME) to the CCA framework root")
+
+
+sys.path.insert(0, str(_cca_scripts()))
 
 NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 

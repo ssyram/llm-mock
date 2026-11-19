@@ -1,7 +1,11 @@
 """新 lane 共用核心：环境解析、payload 派生（逐字对齐冻结 mock_reply）、账本存根。
 
-模型业务不重写：PilotMainScript/PilotWorkerBook/PilotDeltaBook 按只读库复用，
-本模块只做"transcript→逐请求 payload→重放校验→下一步决策"的确定性重建。
+模型业务不重写：MainScript/WorkerBook/DeltaBook 复用已入库的 cca_bench，Pilot
+专属的等待语义由 adapter/worker_wait.py 入库重建；本模块只做"transcript→逐请求
+payload→重放校验→下一步决策"的确定性重建。
+
+CCA 框架根经显式环境变量解析（CCA_NEW_CCA_HOME 优先，其次 CCA_HOME），缺即
+响亮失败——不得硬编码任何开发机绝对路径（LEARNINGS 7）。
 """
 import hashlib
 import json
@@ -11,10 +15,20 @@ import sys
 import time
 from pathlib import Path
 
-PROJECT = Path("/Users/ssyram/workspace/work-fv/c-code-verify/.local/analysis-decouple")
-HOME = PROJECT / ".local/cca-newtree-sut-20261117"
-PILOT = PROJECT / ".pi/research/gate-latency-mock-148"
-sys.path[:0] = [str(HOME / "scripts"), str(PILOT)]
+
+def cca_scripts_path():
+    """CCA 框架根（含 scripts/cca_bench）→ scripts 目录；缺失响亮失败。"""
+    for key in ("CCA_NEW_CCA_HOME", "CCA_HOME"):
+        value = os.environ.get(key)
+        if value:
+            scripts = Path(value) / "scripts"
+            if not (scripts / "cca_bench").is_dir():
+                raise SystemExit("moc18a: %s=%s carries no scripts/cca_bench" % (key, value))
+            return scripts
+    raise SystemExit("moc18a: set CCA_NEW_CCA_HOME (or CCA_HOME) to the CCA framework root")
+
+
+sys.path.insert(0, str(cca_scripts_path()))
 
 TAG_PATTERN = re.compile(r"BENCH-TAG role=(main|worker) phase=(analysis|eqclass) "
                          r"task=([A-Za-z0-9._-]+) kind=([A-Za-z0-9_-]+)")

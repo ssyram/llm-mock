@@ -1,10 +1,12 @@
-"""Worker Segment 业务程序：按冻结 PilotWorkerBook 确定性重放本 worker 会话的
-已回显决策并核对，然后给出下一步真实决策。
+"""Worker Segment 业务程序：按已入库 WorkerBook（cca_bench mock_worker +
+adapter/worker_wait 等待语义）确定性重放本 worker 会话的已回显决策并核对，
+然后给出下一步真实决策。
 
 - 期望表由 transcript 内真实 BENCH-TAG 重建（label→phase），业务步/命令/最小
-  材料全部来自冻结 WorkerBook（读真实任务包编译）。
-- 等待窗口：认领并读包之后、首次写稿之前，真实 sleep planned_sleep_ns（复用
-  Pilot 等待语义；同 (label, attempt) 不重抽）。
+  材料全部来自入库 WorkerBook（读真实任务包编译）。
+- 等待窗口：认领并读包之后、首次写稿之前，真实 sleep planned_sleep_ns
+  （adapter/worker_wait.py 重建的等待语义；种子化抽样对同 (label, attempt)
+  是纯函数，不重抽）。
 - choice tape：old lane 的可回放选择按语义键命中时覆盖抽样（findings 与
   planned sleep），未命中回落 seed 抽样并如实记录。
 """
@@ -19,14 +21,14 @@ from lane_context import (build_payload, decision_matches, fault_reply, fixed_de
 from timing_capture import (capture_wait_window, frontier_submit_issuance, frontier_wait_issuance,
                             persist_worker_observation)
 
-from pilot.case_body import pilot_budgets, pilot_level
-from pilot.worker_wait import PilotDeltaBook, PilotWorkerBook
+from case_body import pilot_budgets, pilot_level
+from worker_wait import WaitDeltaBook, WaitWorkerBook
 from cca_bench.suites.mock_faults import Injection
 from cca_bench.suites.mock_results import MockFault
 from cca_bench.suites.mock_worker import task_kind
 
 
-class TapedDeltaBook(PilotDeltaBook):
+class TapedDeltaBook(WaitDeltaBook):
     def __init__(self, *args, tape=None, notes=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.tape = tape
@@ -47,15 +49,10 @@ class TapedDeltaBook(PilotDeltaBook):
             self.notes.append({"matched": semantic["attempt"], "planned_sleep_ns": choice["plannedSleepNs"]})
             outcome["record"] = dict(choice["record"], label=outcome["record"]["label"])
             outcome["findings"] = choice["findings"]
-            self._taped_sleep_ns = choice["plannedSleepNs"]
+            self.taped_sleep_ns = choice["plannedSleepNs"]
             return outcome
         self.notes.append({"matched": None, "reason": "no semantic tape entry"})
         return outcome
-
-    def sleep_for(self, label, attempt):
-        if getattr(self, "_taped_sleep_ns", None) is not None:
-            return self._taped_sleep_ns / 1e9
-        return super().sleep_for(label, attempt)
 
 
 def assistant_reply(decision, jump):
@@ -85,7 +82,7 @@ def main():
     ledger = TapeLedger(env["records"])
     notes = []
     deltas = TapedDeltaBook(level, spec["seed"], nodes, edges, budgets, tape=env["tape"], notes=notes)
-    workers = PilotWorkerBook(level.name, deltas, ledger, env["workspace"], env["root_session"], "product", Injection())
+    workers = WaitWorkerBook(level.name, deltas, ledger, env["workspace"], env["root_session"], "product", Injection())
     tag = None
     for message in messages:
         if message.get("role") == "user":

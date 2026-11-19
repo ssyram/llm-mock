@@ -1,14 +1,13 @@
-"""Collect the native terminal state with the original moc18a collector."""
+"""Collect the native terminal state with the checked-in moc18a collector."""
 import json
 import os
 import sys
 from pathlib import Path
 from types import SimpleNamespace
 
-ORIGINAL = Path('/Users/ssyram/workspace/work-fv/c-code-verify/.local/analysis-decouple/.pi/moc18a')
-sys.path[:0] = [str(ORIGINAL), str(Path(__file__).resolve().parent)]
+sys.path[:0] = [str(Path(__file__).resolve().parent)]
 from collect_run import collect
-from pilot.worker_wait import PilotDeltaBook
+from cca_bench.suites.mock_delta import DeltaBook
 from timing_capture import apply_worker_timing, load_gate_timeline
 
 REPLAY_TIMES = {'first_request_ns', 'first_tool_ns', 'sleep_start_ns', 'sleep_end_ns',
@@ -62,7 +61,7 @@ class WorkerEvidence:
 
 class DeltaEvidence:
     def __init__(self, level, seed, artifact, budgets, records):
-        book = PilotDeltaBook(level, seed, len(artifact.nodes), len(artifact.edges), budgets)
+        book = DeltaBook(level, seed, len(artifact.nodes), len(artifact.edges), budgets)
         self.node_budget, self.edge_budget = book.node_budget, book.edge_budget
         self.records = [record['delta'] for record in records if 'delta' in record]
         self.bridge_state, self.bridge_records = 'not-configured', []

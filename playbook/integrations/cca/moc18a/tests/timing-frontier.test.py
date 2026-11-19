@@ -18,9 +18,9 @@ from unittest.mock import patch
 
 sys.dont_write_bytecode = True
 DOMAIN = Path(__file__).resolve().parents[1]
-PROJECT = Path('/Users/ssyram/workspace/work-fv/c-code-verify/.local/analysis-decouple')
-sys.path[:0] = [str(DOMAIN), str(PROJECT / '.local/cca-newtree-sut-20261117/scripts'),
-                str(PROJECT / '.pi/research/gate-latency-mock-148')]
+from cca_scripts_path import cca_scripts
+
+sys.path[:0] = [str(DOMAIN), str(cca_scripts())]
 
 import adapter.main_step as main_step
 import adapter.worker_step as worker_step
@@ -30,7 +30,7 @@ from cca_bench.suites.mock_worker import BOOTSTRAP, PRODUCT_TAIL
 ROOT = 'ses-frontier-root'
 WORKER_SESSION = 'ses-frontier-w1'
 GATE_CAPTURED_NS = 1_795_200_000_000_000_000
-SPEC = json.loads((PROJECT / '.pi/npr/l4b/input-spec.json').read_text(encoding='utf-8'))
+SPEC = json.loads((Path(__file__).resolve().parent / 'fixtures' / 'input-spec.json').read_text(encoding='utf-8'))
 
 
 class FakeMainScript:
@@ -132,8 +132,8 @@ WORKER_TAG = {"task": "w1", "phase": "analysis"}
 
 
 class FakeWorkerBook:
-    """冻结 WorkerBook/PilotWorkerBook.step 同契约替身：逐次重放/签发步序列，
-    签发首个写步时按 Pilot 语义 armed pending_wait_ns，不核对回执内容。"""
+    """冻结 WorkerBook/WaitWorkerBook.step 同契约替身：逐次重放/签发步序列，
+    签发首个写步时按等待语义 armed pending_wait_ns，不核对回执内容。"""
 
     def __init__(self, *args, **kwargs):
         self.by_session = {}
@@ -194,7 +194,7 @@ def run_worker(records, echo_count, pointer):
     env = {"root": root, "spec": SPEC, "entries": {}, "workspace": root / 'w',
            "root_session": ROOT, "tape": None, "records": records}
     with patch.object(worker_step, 'lane_env', lambda: env), \
-            patch.object(worker_step, 'PilotWorkerBook', FakeWorkerBook), \
+            patch.object(worker_step, 'WaitWorkerBook', FakeWorkerBook), \
             patch('sys.stdin', io.StringIO(envelope)), redirect_stdout(io.StringIO()):
         worker_step.main()
 
