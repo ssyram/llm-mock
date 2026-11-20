@@ -109,6 +109,7 @@ export function runSegment(session, input, node) {
 	}
 	const active = session.segment && session.segment.path === unit.path && session.segment.nodeIndex === session.pc.node;
 	session.reader = active ? session.segment.rvMessage : session.readerPos;
+	session.lastSegment = { frame: session.pc.frame, nodeIndex: session.pc.node };
 	const resolvedWith = safeRefs(node.with, frame, `segment @${node.openIndex}`);
 	if (resolvedWith.error) return resolvedWith;
 	const outcome = runExternal(node, { role: "segment", transcript: session.opts.ensureTranscript(), pointer: session.reader, with: resolvedWith.value }, {

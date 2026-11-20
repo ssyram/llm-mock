@@ -1,0 +1,140 @@
+"""Main 车道保留尾重放与 walk 目标解析（main_step 的重放职责模块）。
+
+锚后保留尾逐条经冻结机核对：绑定回显按回执指纹核对即跳过（绝不重步进、
+绝不向后索要旧结果）；恢复位待发决策与等待回显只核对、不驱动机；其余回显
+经 script.step 重放并逐字核对。walk（P 处回显且其后无回执＝本请求即该回显
+的重发）目标优先按已绑回执/恢复位待发决策逐字重构，非主回显按转录原文重导。
+锚前＝显式丢弃段，由调用方先跳锚，本模块只处理锚后保留尾。
+"""
+import json
+
+import compact_inflight_wait
+import compact_receipt
+import compact_state
+from lane_context import build_payload, decision_matches, message_text
+
+
+def _fault(kind, message):
+    from cca_bench.suites.mock_results import MockFault
+    return MockFault(kind, message)
+
+
+def message_kind(message):
+    content = message.get("content") or []
+    if any(isinstance(b, dict) and b.get("type") == "toolCall" and b.get("name") == "StructuredOutput"
+           for b in content):
+        return "gate"
+    if any(isinstance(b, dict) and b.get("type") == "text"
+           and ("continue from " in b.get("text", "") or '"compact-progress"' in b.get("text", ""))
+           for b in content):
+        return "compaction"
+    return "main"
+
+
+def is_main_echo(message):
+    return message.get("role") == "assistant" and bool(message.get("content")) \
+        and message_kind(message) == "main"
+
+
+def pending_echo(decision, message):
+    """回显是否恰为恢复侧重建出的待发决策（从未送达宿主的那一枚）的再投递。"""
+    if not decision or decision.get("action") != "tool":
+        return False
+    content = message.get("content") or []
+    call = next((b for b in content if isinstance(b, dict) and b.get("type") == "toolCall"), None)
+    return decision_matches(decision, message) if call is not None else False
+
+
+def terminal_echo(decision, message):
+    """tail 里的终局回显是否恰为恢复位终局决策（已证完局）的确定性重导。"""
+    return (bool(decision) and decision.get("terminal") and message.get("role") == "assistant"
+            and not any(isinstance(b, dict) and b.get("type") == "toolCall"
+                        for b in message.get("content") or [])
+            and message_text(message) == decision.get("text"))
+
+
+def trace_row(case, pointer, floor):
+    return {"case": case, "pointer": pointer, "boundary": pointer, "jump": None,
+            "compact": floor > 0, "compact_floor": floor, "frontier_gates": [],
+            "verified_call_ids": []}
+
+
+def replay_retained(script, raw, env, messages, floor, upto, baseline):
+    """重放锚后保留尾回显并逐字核对；返回（已消费集合, 绑定回执表）供 walk 判定。
+
+    锚前（index < floor）＝显式丢弃段：不解析、不匹配、不绑定、不触发协议故障。
+    """
+    consumed_bound = set(script.consumed) if baseline is not None else None
+    bound_receipts = {item["call_id"]: item for item in ((baseline or {}).get("receipts") or [])}
+    for index, message in enumerate(messages):
+        if index > upto or message.get("role") != "assistant" or index < floor:
+            continue
+        if message_kind(message) == "compaction":
+            ref = compact_receipt.receipt_shaped(message, message_text)
+            if ref is not None:
+                compact_state.verify_ref(env, ref)  # 锚后回执回显须属本 root 链
+            script.compacted()
+            continue
+        if message_kind(message) == "gate":
+            continue
+        call = next((b for b in message.get("content") or []
+                     if isinstance(b, dict) and b.get("type") == "toolCall"), None)
+        covered = consumed_bound is not None and call is not None and call.get("id") in consumed_bound
+        if covered:
+            held = bound_receipts.get(call.get("id"))
+            if held is not None and (call.get("name") != held.get("tool")
+                                     or call.get("arguments") != held.get("arguments")):
+                raise _fault("compact_history_drift",
+                             "retained echo %r does not match the bound receipt" % call.get("id"))
+            continue  # 基线已消费的回显：绑定背书跳过，绝不重步进/向后要旧结果
+        if pending_echo(getattr(script, "compact_pending_decision", None), message):
+            continue  # 恢复位待发决策的真实投递回显：核对即可，回执由前沿消费
+        if compact_inflight_wait.is_wait_echo(getattr(script, "compact_pending_decision", None), message):
+            continue  # 等待回显＝本 lane 等待决策的确定性重导，不驱动机
+        if terminal_echo(getattr(script, "compact_pending_decision", None), message):
+            continue  # 终局回显＝已证完局终局决策的确定性重导，不驱动机
+        script.entry_context["replay"] = True
+        decision = script.step(build_payload(raw, index))
+        if not decision_matches(decision, message):
+            raise _fault("replay_drift", "replayed %r but transcript has %r"
+                         % ({k: decision.get(k) for k in ("action", "id", "name")},
+                            json.dumps(message.get("content"), ensure_ascii=False)[:300]))
+    return consumed_bound, bound_receipts
+
+
+def walk_target(script, messages, pointer, floor, consumed_bound, bound_receipts):
+    """walk 重发目标的解析：(decision, trace) 或 None＝非重导形状，按前沿正常步进。
+
+    已绑回执的旧回显＝指纹一致即逐字重构（引擎采纳，不驱动机、不重发副作用）；
+    恢复位待发决策＝逐字核对后原样重发；非主回显＝按转录文本原文重导。
+    """
+    target = next((b for b in messages[pointer].get("content") or []
+                   if isinstance(b, dict) and b.get("type") == "toolCall"), None)
+    pending = getattr(script, "compact_pending_decision", None)
+    if target is not None and target.get("id") in (consumed_bound or set()):
+        held = bound_receipts.get(target.get("id"))
+        if held is None or target.get("name") != held.get("tool") \
+                or target.get("arguments") != held.get("arguments"):
+            raise _fault("compact_history_drift",
+                         "walk echo %r does not match the bound receipt" % target.get("id"))
+        return {"action": "tool", "id": held["call_id"], "name": held["tool"],
+                "arguments": held["arguments"]}, trace_row("walk-bound-echo", pointer, floor)
+    if target is not None and pending is not None and target.get("id") == pending.get("id"):
+        if not decision_matches(pending, messages[pointer]):
+            raise _fault("replay_drift", "walk echo diverges from the restored pending decision")
+        return pending, trace_row("walk-pending-echo", pointer, floor)
+    if not is_main_echo(messages[pointer]):
+        text = "\n".join(b.get("text", "") for b in messages[pointer].get("content") or []
+                         if isinstance(b, dict) and b.get("type") == "text")
+        return {"action": "text", "text": text, "verbatim": True}, trace_row(
+            "walk-verbatim", pointer, floor)
+    if getattr(script, "done", False) and not any(
+            isinstance(b, dict) and b.get("type") == "toolCall"
+            for b in messages[pointer].get("content") or []):
+        # 已证完局后的纯文本主回显（终局文本）walk＝逐字重导：机已终局，绝不
+        # 再驱动 step（resubmit_after_success 对真重发保持，只是不再吞掉终局）。
+        text = "\n".join(b.get("text", "") for b in messages[pointer].get("content") or []
+                         if isinstance(b, dict) and b.get("type") == "text")
+        return {"action": "text", "text": text, "verbatim": True}, trace_row(
+            "walk-terminal-echo", pointer, floor)
+    return None

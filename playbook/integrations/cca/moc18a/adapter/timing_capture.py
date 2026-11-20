@@ -2,9 +2,10 @@
 
 观测点都是新 lane 可真实目击的边界：worker 会话首请求到达、首写步决策的真实
 sleep 窗口（仅前沿签发，不含重放重建触发的重复睡眠）、submit 步前沿签发、
-终局文本前沿签发；main 的 {phase}_final_gate_ns 只在前沿请求（boundary==消息数）
-由最终 step 新消费终门回执、新产出该键时落盘——重放循环重建的旧门与历史
-resume 重放不写。全部持久化按（task/phase/session/call_id）带身份，重放或传输
+终局文本前沿签发；main 的 {phase}_final_gate_ns 在前沿请求（boundary==消息数）
+新消费终门回执、新产出该键时记录真实观测时间；恢复侧只能保存绑定回执携带的
+原始宿主完成时间，缺失则不写，绝不采用重放时钟。全部持久化按
+（task/phase/session/call_id）带身份，重放或传输
 重试永不改写首写值；采集器侧只读这些文件，缺文件即缺证据，失败照旧保留。
 """
 import json

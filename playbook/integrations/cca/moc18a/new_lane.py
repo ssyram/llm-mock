@@ -10,6 +10,7 @@ TAPE 为 old lane 可回放选择带（缺省 '-'）；SPEC 为 pair 共享输�
 TUI 输入 start 触发全自动两阶段；本脚本不投递任何输入。
 """
 import json
+import os
 import shlex
 import sys
 import time
@@ -17,8 +18,15 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 PROJECT = Path("/Users/ssyram/workspace/work-fv/c-code-verify/.local/analysis-decouple")
-HOME = PROJECT / ".local/cca-newtree-sut-20261117"
-sys.path[:0] = [str(HOME / "scripts"), str(PROJECT / ".pi/research/gate-latency-mock-148"), str(HERE.parent)]
+# 显式导出环境（固定提交导出根）优先；未设即旧树原行为。显式设置了但路径缺
+# 必备布局时在边界硬错——绝不静默回退旧树，否则生成物会混两个框架根。
+HOME = Path(os.environ["CCA_MOCK18A_SUT"]) if os.environ.get("CCA_MOCK18A_SUT") else PROJECT / ".local/cca-newtree-sut-20261117"
+PILOT = Path(os.environ["CCA_MOCK18A_PILOT"]) if os.environ.get("CCA_MOCK18A_PILOT") else PROJECT / ".pi/research/gate-latency-mock-148"
+if os.environ.get("CCA_MOCK18A_SUT") and not (HOME / "scripts").is_dir():
+    raise SystemExit("CCA_MOCK18A_SUT missing scripts/ (refusing legacy fallback): %s" % HOME)
+if os.environ.get("CCA_MOCK18A_PILOT") and not (PILOT / "pilot").is_dir():
+    raise SystemExit("CCA_MOCK18A_PILOT missing pilot/ (refusing legacy fallback): %s" % PILOT)
+sys.path[:0] = [str(HOME / "scripts"), str(PILOT), str(HERE.parent)]
 
 from cca_bench import workspace_isolation
 from cca_bench.suites import mock_plan
@@ -29,6 +37,25 @@ import adapter.spec_graph as spec_graph
 from adapter.collect_terminal import collect_terminal, first_tape_fault, terminal_message
 
 consume_graph_spec, write_sources = spec_graph.consume_graph_spec, spec_graph.write_sources
+
+# 权威意图材料：dispatchable 包必备的 _cca_analysis/intent.md 由 lane 以预备者身份
+# 安装（生产中属用户/prepare 材料，产品从不代建）。缺省用本 lane 夹具文本；外部
+# 材料经 CCA_NEW_INTENT_MD 显式指定（不可读即硬错，不静默回退）。
+FIXTURE_INTENT_MD = ("# Intent (moc18a fixture)\n\n## 用户意图与需求\n"
+                     "moc18a 夹具用户条款：按输入 spec 的图完成 Analysis 与 EqClass 两阶段并完成最终交付；"
+                     "随机发现（新函数/新边/外部标注/新事实）只允许在 spec.mock 供给的预算之内。\n\n"
+                     "## 公开输入域\nspec 声明的函数与边集合，以及 spec.mock 声明的抽样预算。\n")
+
+
+def install_intent_md(workspace):
+    text = FIXTURE_INTENT_MD
+    source = os.environ.get("CCA_NEW_INTENT_MD")
+    if source:
+        text = Path(source).read_text(encoding="utf-8")
+    path = workspace / "_cca_analysis" / "intent.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
 
 
 def save(path, document):
@@ -55,6 +82,7 @@ def main():
     workspace_isolation.isolate_workspace(workspace, git=True)
     artifact = consume_graph_spec(spec)
     write_stats, source_root = write_sources(artifact, workspace)
+    install_intent_md(workspace)
     level = pilot_level(spec["parallel"], spec["batch"], spec["mock"]["max_new_nodes"])
     budgets = pilot_budgets(level, len(artifact.nodes), len(artifact.edges), 1800,
                             spec["mock"]["max_new_nodes"], spec["mock"]["max_new_facts"])
@@ -65,6 +93,10 @@ def main():
                     PYTHONDONTWRITEBYTECODE="1",
                     CCA_NEW_LANE=str(lane_root), CCA_NEW_WORKSPACE=str(workspace),
                     CCA_NEW_TAPE="" if tape_arg == "-" else str(Path(tape_arg).resolve()))
+    # lane.env 是全部子进程（fsm/mock/oc 与 mount 下的 new_reply.py）的唯一环境：
+    # 导出选择必须随之传递，生成脚本（attach.sh）与部署环境才与 launcher 同根。
+    lane.env.update({name: os.environ[name] for name in ("CCA_MOCK18A_SUT", "CCA_MOCK18A_PILOT")
+                     if os.environ.get(name)})
     lane.prepare_dirs()
     lane.start_fsm()
     lane.deploy(HOME)
@@ -86,7 +118,7 @@ def main():
     attach = attach + ["attach", lane.config.server_url, "--dir", str(workspace), "--session", session]
     shell = "#!/bin/sh\nset -eu\n" + "\n".join(
         "export " + key + "=" + shlex.quote(value) for key, value in lane.env.items()
-        if key.startswith("CCA_NEW_") or key in ("HOME", "TMPDIR", "TERM", "PATH"))
+        if key.startswith(("CCA_NEW_", "CCA_MOCK18A_")) or key in ("HOME", "TMPDIR", "TERM", "PATH"))
     shell += "\nexec " + shlex.join(attach) + "\n"
     attach_path = lane_root / "attach.sh"
     attach_path.write_text(shell, encoding="utf-8")

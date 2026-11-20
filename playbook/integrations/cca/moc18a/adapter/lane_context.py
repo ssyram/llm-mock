@@ -11,9 +11,17 @@ import sys
 import time
 from pathlib import Path
 
-PROJECT = Path("/Users/ssyram/workspace/work-fv/c-code-verify/.local/analysis-decouple")
-HOME = PROJECT / ".local/cca-newtree-sut-20261117"
-PILOT = PROJECT / ".pi/research/gate-latency-mock-148"
+PROJECT = Path(os.environ.get("CCA_ANALYSIS_PROJECT",
+                              "/Users/ssyram/workspace/work-fv/c-code-verify/.local/analysis-decouple"))
+# 与 launcher（new_lane.py）同一显式导出环境、同一优先级：CCA_MOCK18A_SUT/
+# CCA_MOCK18A_PILOT 一致解析 HOME/PILOT，未设即旧树原行为；显式设置了但缺必备
+# 布局时在边界硬错，不静默回退（否则挂载子进程与 launcher 会用两个框架根）。
+HOME = Path(os.environ["CCA_MOCK18A_SUT"]) if os.environ.get("CCA_MOCK18A_SUT") else PROJECT / ".local/cca-newtree-sut-20261117"
+PILOT = Path(os.environ["CCA_MOCK18A_PILOT"]) if os.environ.get("CCA_MOCK18A_PILOT") else PROJECT / ".pi/research/gate-latency-mock-148"
+if os.environ.get("CCA_MOCK18A_SUT") and not (HOME / "scripts").is_dir():
+    raise RuntimeError("CCA_MOCK18A_SUT missing scripts/ (refusing legacy fallback): %s" % HOME)
+if os.environ.get("CCA_MOCK18A_PILOT") and not (PILOT / "pilot").is_dir():
+    raise RuntimeError("CCA_MOCK18A_PILOT missing pilot/ (refusing legacy fallback): %s" % PILOT)
 sys.path[:0] = [str(HOME / "scripts"), str(PILOT)]
 
 TAG_PATTERN = re.compile(r"BENCH-TAG role=(main|worker) phase=(analysis|eqclass) "
@@ -51,7 +59,13 @@ def lane_env():
 
 
 class TapeLedger:
-    """冻结机账本的忠实存根：计数 + 全量 jsonl 落盘（观测不裁剪）。"""
+    """冻结机账本的忠实存根：计数 + 全量 jsonl 落盘（观测不裁剪）。
+
+    count 事件同样落盘：每请求都是新进程，内存计数不可跨请求（r256b 首错
+    根因即内存计数恒 0），真实 worker 完成经账本行持久。重放会重复触发同一
+    count：跨进程消费方按 (phase, kind, label) 去重，语义为“真实发生过该
+    事件的标签集合”，跨重放幂等、不随请求数膨胀。
+    """
 
     def __init__(self, records_dir):
         self.records_dir = Path(records_dir)
@@ -61,6 +75,7 @@ class TapeLedger:
 
     def count(self, phase, event, label):
         self.counts[(phase, event, label)] = self.counts.get((phase, event, label), 0) + 1
+        self._ingest({"event": "count", "phase": phase, "kind": event, "label": label})
 
     def total_accepted(self):
         return sum(1 for (phase, event, _), n in self.counts.items() if event == "accepted" for _ in range(n))

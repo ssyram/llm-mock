@@ -12,12 +12,29 @@ import { userTextOf } from "./mount-reply.mjs";
 const fail = (code, message) => ({ error: { status: 422, code, message } });
 const projection = (content) => (Array.isArray(content) ? content.filter((b) => !(b?.type === "text" && b.text === "")) : content);
 
+// 已落地历史 assistant 回显到达时流停 user 单元：引擎自身无待决发射，唯一能
+// 核对该回显的是最近命令 segment（回声归属由其程序 fail closed）。重入该
+// segment（fresh 入口，reader=当前回显位）；无 segment 可接管则维持原故障。
+function adoptOrphanSegment(session) {
+	if (session.pendingEcho || session.replyOwed || session.segment || !session.lastSegment) return false;
+	const last = session.lastSegment;
+	if (last.frame >= session.frames.length) return false;
+	const unit = session.units.get(session.frames[last.frame].path);
+	const node = unit?.nodes[last.nodeIndex];
+	if (!node || node.kind !== "segment" || node.form === "file") return false;
+	const currentUnit = session.units.get(session.frames[session.pc.frame].path);
+	if (currentUnit?.nodes[session.pc.node]?.kind !== "user") return false;
+	session.pc = { frame: last.frame, node: last.nodeIndex };
+	session.segment = null;
+	return true;
+}
+
 export function freshSession(rootUnits, opts) {
 	return {
 		roots: [...rootUnits.keys()], units: rootUnits, frames: [], pc: { frame: 0, node: 0 },
 		readerPos: 0, callSeq: 0, steps: 0, reader: null, pending: null,
 		replyOwed: false, lastReply: null, pendingEcho: false, emitIndex: -1,
-		segment: null, pendingAggregation: null, executedVolatile: [], matchesRun: [],
+		segment: null, lastSegment: null, pendingAggregation: null, executedVolatile: [], matchesRun: [],
 		ended: false, selectedRoot: null, opts,
 	};
 }
@@ -73,6 +90,7 @@ export function handleRequest(session, input) {
 		}
 		if (message.role === "assistant") {
 			if (!session.pendingEcho) {
+				adoptOrphanSegment(session);
 				const before = session.readerPos;
 				const stop = runFlow(session, input);
 				if (stop.error) return stop;
