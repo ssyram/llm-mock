@@ -94,3 +94,6 @@ dev 版 `mcp-server-fsm register-skill` 只把技能写进 `store.db`，不再�
 不是内部状态快照字段全等；本次只报告实测的业务完成与终态一致，不证明全轨迹双模拟。
 
 压缩/意图工作树的原生全量实测（macOS 开发机，冻结依赖）：lane `r128c` 于基线 `0a25488` 之上运行，`result.json` status=ok、problems=[]；27 个 worker（analysis 15 / eqclass 12）全部提交且终局接受（27/27），Analysis 接受 130、EqClass 接受 128（终图 130 节点/260 边，`final_obligation`=128，与初始 spec 义务一致），27 个真实 sleep 等待零 overshoot、最大成对重叠 2437739000 ns。被测树 = `0a25488` + 52 个修改/新增路径（sha256 清单 `c06f06f24e578b8b5934e357db357ee3d1c26c6039de8cb5df2387acbbd6b0ad`，公式：sorted-uniq 路径串接 `path+NUL+sha256(file).hexdigest+newline` 后整体 sha256）；当时的 SUT/Pilot 经 `CCA_MOCK18A_SUT`（`intent-deployment-d0fa23d41`）与旧 `CCA_MOCK18A_PILOT`（`gate-latency-mock-148`）显式提供（pilot 依赖现已全部由入库 adapter 替换，该环境变量已移除）。该原生实跑验证的是合并前旧树；合并后（入库 adapter 基座 + 压缩/意图特性）代码已变更，需新的原生实跑重新钉版本。该实跑仅在本机 macOS 完成，不声明 Linux 实跑、不声明全轨迹双模拟或覆盖率数字。
+
+战役结论记录（2026-11-20，用户验收口径经 a688 转达，含事实边界与后续计划存档）：
+[`../../docs/cca-moc18a/campaign-conclusion-2026-11-20.md`](../../docs/cca-moc18a/campaign-conclusion-2026-11-20.md)。
