@@ -51,7 +51,7 @@ def parse_para(messages):
 
 def build_script(env, ledger):
     spec, mock = env["spec"], env["spec"]["mock"]
-    level = fixed_default_level(spec, pilot_level(spec["parallel"], spec["batch"], mock["max_new_nodes"]))
+    level = fixed_default_level(spec, pilot_level(spec["parallel"], spec["batch"], mock))
     budgets = pilot_budgets(level, len(spec["nodes"]), len(spec["edges"]), 1800,
                             mock["max_new_nodes"], mock["max_new_facts"])
     deltas = WaitDeltaBook(level, spec["seed"], len(spec["nodes"]), len(spec["edges"]), budgets)

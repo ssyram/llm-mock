@@ -52,7 +52,9 @@ class TerminalCollectionTest(unittest.TestCase):
 
     def test_completed_terminal_still_requires_gate_files_for_timeline(self):
         import json
-        level = pilot_level(2, 2, 2)
+        level = pilot_level(2, 2, {"delta_probability": 0.5, "max_new_nodes_per_task": 1,
+                                       "max_new_edges_per_task": 1, "max_external_marks_per_task": 0,
+                                       "max_new_nodes": 2, "max_new_facts": 4, "wait_seconds": [0.5, 3.0]})
         budgets = pilot_budgets(level, 6, 3, 1800, 2, 4)
         artifact = SimpleNamespace(nodes=range(6), edges=range(3))
         graph = {'mode': 'fullset', 'artifact': artifact}
@@ -72,7 +74,9 @@ class TerminalCollectionTest(unittest.TestCase):
         self.assertEqual(machine.main.stats['timeline'], {'analysis_final_gate_ns': 7})
 
     def test_original_collector_is_used_and_result_is_published_last(self):
-        level = pilot_level(2, 2, 2)
+        level = pilot_level(2, 2, {"delta_probability": 0.5, "max_new_nodes_per_task": 1,
+                                       "max_new_edges_per_task": 1, "max_external_marks_per_task": 0,
+                                       "max_new_nodes": 2, "max_new_facts": 4, "wait_seconds": [0.5, 3.0]})
         budgets = pilot_budgets(level, 6, 3, 1800, 2, 4)
         artifact = SimpleNamespace(nodes=range(6), edges=range(3))
         graph = {'mode': 'fullset', 'artifact': artifact}
@@ -149,7 +153,9 @@ class TerminalCollectionTest(unittest.TestCase):
         self.assertNotIn('pointer', terminal_reply('campaign complete', None))
 
     def test_per_request_budget_is_not_reported_as_global_usage(self):
-        level = pilot_level(2, 2, 2)
+        level = pilot_level(2, 2, {"delta_probability": 0.5, "max_new_nodes_per_task": 1,
+                                       "max_new_edges_per_task": 1, "max_external_marks_per_task": 0,
+                                       "max_new_nodes": 2, "max_new_facts": 4, "wait_seconds": [0.5, 3.0]})
         budgets = pilot_budgets(level, 6, 3, 1800, 2, 4)
         book = DeltaEvidence(level, 1, SimpleNamespace(nodes=range(6), edges=range(3)), budgets,
                              [{'delta': {'label': 'observed'}}])

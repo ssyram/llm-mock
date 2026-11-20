@@ -100,7 +100,7 @@ def main():
     messages = ((raw.get("request") or {}).get("context") or {}).get("messages") or []
     env = lane_env()
     spec, mock = env["spec"], env["spec"]["mock"]
-    level = fixed_default_level(spec, pilot_level(spec["parallel"], spec["batch"], mock["max_new_nodes"]))
+    level = fixed_default_level(spec, pilot_level(spec["parallel"], spec["batch"], mock))
     nodes, edges = len(spec["nodes"]), len(spec["edges"])
     budgets = pilot_budgets(level, nodes, edges, 1800, mock["max_new_nodes"], mock["max_new_facts"])
     ledger = TapeLedger(env["records"])

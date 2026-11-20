@@ -39,7 +39,9 @@ if SUT:
     from cca_bench.suites.mock_results import MockFault
     from adapter.case_body import pilot_budgets, pilot_level
     from adapter.worker_wait import WaitWorkerBook
-    LEVEL = pilot_level(2, 2, 0)
+    LEVEL = pilot_level(2, 2, {"delta_probability": 0.0, "max_new_nodes_per_task": 0,
+                                "max_new_edges_per_task": 0, "max_external_marks_per_task": 0,
+                                "max_new_nodes": 0, "max_new_facts": 0, "wait_seconds": [0.5, 3.0]})
 
     def taped(tape=None):
         return TapedDeltaBook(LEVEL, "seed-intent", 4, 3, pilot_budgets(LEVEL, 4, 3, 60, 0, 0), tape=tape, notes=[])

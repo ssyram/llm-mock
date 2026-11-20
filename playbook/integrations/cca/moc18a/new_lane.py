@@ -152,7 +152,7 @@ def main():
     artifact = consume_graph_spec(spec)
     write_stats, source_root = write_sources(artifact, workspace)
     install_intent_md(workspace)
-    level = pilot_level(spec["parallel"], spec["batch"], spec["mock"]["max_new_nodes"])
+    level = pilot_level(spec["parallel"], spec["batch"], spec["mock"])
     budgets = pilot_budgets(level, len(artifact.nodes), len(artifact.edges), 1800,
                             spec["mock"]["max_new_nodes"], spec["mock"]["max_new_facts"])
     lane = Lane("moc18a-new", lane_root, workspace, mock_plan.binaries(), spec["parallel"], spec["batch"])

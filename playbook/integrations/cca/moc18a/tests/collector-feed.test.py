@@ -73,7 +73,7 @@ def write_timing(records, record, base_ns, planned_override=None, disordered=Fal
 def run_collect(lane_root):
     spec = json.loads((EVIDENCE / 'input-spec.json').read_text(encoding='utf-8'))
     artifact = consume_graph_spec(spec)
-    level = pilot_level(spec['parallel'], spec['batch'], spec['mock']['max_new_nodes'])
+    level = pilot_level(spec['parallel'], spec['batch'], spec['mock'])
     budgets = pilot_budgets(level, len(spec['nodes']), len(spec['edges']), 1800,
                             spec['mock']['max_new_nodes'], spec['mock']['max_new_facts'])
     graph = {"mode": spec["mode"], "artifact": artifact, "entries": None, "bridge": None,

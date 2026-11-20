@@ -30,7 +30,7 @@ from cca_bench.suites.mock_results import MockFault
 
 def build_script(env, ledger):
     spec, mock = env["spec"], env["spec"]["mock"]
-    level = fixed_default_level(spec, pilot_level(spec["parallel"], spec["batch"], mock["max_new_nodes"]))
+    level = fixed_default_level(spec, pilot_level(spec["parallel"], spec["batch"], mock))
     nodes, edges = len(spec["nodes"]), len(spec["edges"])
     budgets = pilot_budgets(level, nodes, edges, 1800, mock["max_new_nodes"], mock["max_new_facts"])
     deltas = WaitDeltaBook(level, spec["seed"], nodes, edges, budgets)

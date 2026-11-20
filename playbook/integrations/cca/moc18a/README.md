@@ -71,8 +71,8 @@ dev 版 `mcp-server-fsm register-skill` 只把技能写进 `store.db`，不再�
 
 | 原私有件 | 入库替换 | 语义 |
 |---|---|---|
-| `pilot.case_body` | `adapter/case_body.py` | 输入 spec → LevelParams/预算；字段取值只在普通随机模式生效（确定性模式被 `fixed_default_level` 压平），选择见代码注释 |
-| `pilot.worker_wait`（WorkerBook/DeltaBook 等待语义） | `adapter/worker_wait.py` | 剔除剧本内嵌 draw-sleep bash 步，首写步签发时 armed `pending_wait_ns`，worker_step 在真实前沿消费并落双域时钟窗口；磁带命中时 `planned_sleep_ns` 与之一同源（原 `sleep_for` 语义） |
+| `pilot.case_body` | `adapter/case_body.py` | 输入 spec → LevelParams/预算；随机参数由 spec.mock 逐字段治理（delta_p=delta_probability、每任务上限=max_*_per_task、等待窗口=wait_seconds），r128c 实跑 spec 值 0.5/1/1/0/(0.5,3.0) 与旧 pilot 恒参逐项相等；确定性模式被 `fixed_default_level` 压平，契约见 `tests/random-mock-parity.test.py` |
+| `pilot.worker_wait`（WorkerBook/DeltaBook 等待语义） | `adapter/worker_wait.py` | 剔除剧本内嵌 draw-sleep bash 步，首写步签发时 armed `pending_wait_ns`，等待抽样＝(seed, 逻辑标签, attempt) 纯函数（旧 `sleep_for` 公式），recover 新会话同标签递增 attempt 并重抽、同会话重放不重抽，无写稿步即 `MockFault("no_write_step")`；worker_step 在真实前沿消费并落双域时钟窗口；磁带命中时 `planned_sleep_ns` 以带内 plannedSleepNs 为准且不跨会话泄漏 |
 | `pilot.machine.PilotMainScript` | `adapter/main_intent.py`（`IntentMainScript`） | cca_bench `MainScript` 之上恢复 prepare 语义：A_PREPARE 内先写 `<W>/_cca_analysis/intent.md`（`cca_state reserve` 的任务包构建强依赖） |
 | 原终态采集器 | `adapter/collect_run.py` | 终态采集/判定按 collector-feed 离线回归判据重建；`collect_terminal` 的证据 DeltaBook 换 `cca_bench.mock_delta.DeltaBook` |
 | （测试内私有路径） | `tests/cca_scripts_path.py` + `tests/fixtures/input-spec.json` | 测试的 CCA 根经 `CCA_NEW_CCA_HOME`/`CCA_HOME` 显式给出；历史私有证据包经 `MOC18A_EVIDENCE_DIR` / `MOC18A_OLD_EVIDENCE_DIR` / `MOC18A_INPUT_SPEC` 显式给出，缺则该测试显式 skip（不造数据、不弱化断言） |
