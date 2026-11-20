@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
@@ -48,6 +49,27 @@ class TerminalCollectionTest(unittest.TestCase):
         self.assertEqual(records, [{'logical_label': 'one', 'planned_sleep_ns': 500000000,
                                     'delta': {'label': 'one'}}])
         self.assertEqual(original['terminal_ns'], 17)
+
+    def test_completed_terminal_still_requires_gate_files_for_timeline(self):
+        import json
+        level = pilot_level(2, 2, 2)
+        budgets = pilot_budgets(level, 6, 3, 1800, 2, 4)
+        artifact = SimpleNamespace(nodes=range(6), edges=range(3))
+        graph = {'mode': 'fullset', 'artifact': artifact}
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / 'records').mkdir()
+            (root / 'records' / 'timing-main-gate-analysis.json').write_text(json.dumps(
+                {'phase': 'analysis', 'gate': 'analysis_final_gate_ns', 'at_ns': 7, 'call_id': 'main.s31',
+                 'session': 'root-id'}))
+            with patch('pathlib.Path.glob', return_value=[]), \
+                    patch('pathlib.Path.iterdir', return_value=[Path(str(root / 'collection' / 'result.json'))]), \
+                    patch('adapter.collect_terminal.collect') as original, \
+                    patch('adapter.collect_terminal.os.link'):
+                collect_terminal('/home', root, object(), graph, level, budgets, 1, True, None)
+        machine = original.call_args.args[4]
+        self.assertTrue(machine.main.done)
+        self.assertEqual(machine.main.stats['timeline'], {'analysis_final_gate_ns': 7})
 
     def test_original_collector_is_used_and_result_is_published_last(self):
         level = pilot_level(2, 2, 2)
