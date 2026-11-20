@@ -27,7 +27,7 @@ import compact_receipt
 import compact_state
 from lane_context import (build_payload, fixed_default_level, lane_env,
                           message_text, request_boundaries, TapeLedger, trace_handler)
-from main_replay import is_main_echo, message_kind, replay_retained, trace_row, walk_target
+from main_replay import is_main_echo, message_kind, replay_retained, tail_advance, trace_row, walk_target
 from phase_entry import phase_entry
 from timing_capture import persist_main_gate
 
@@ -93,7 +93,11 @@ def next_decision(raw, messages, pointer, script, env=None):
     at_echo = pointer < len(messages) and messages[pointer].get("role") == "assistant"
     resume = (at_echo and is_main_echo(messages[pointer])
               and pointer + 1 < len(messages) and messages[pointer + 1].get("role") == "toolResult")
-    walk = at_echo and not resume
+    walk = at_echo and not resume and pointer == len(messages) - 1
+    # 保留尾中段回显（其后仍有真实消息）≠裸重发（r256c row921 首错：OC 保留尾
+    # 可始于早于锚检查点的静息点，其首回显后随 user 而非回执）：交给 tail_advance
+    # 按基线覆盖性重导/跳转，绝不在此直接 step 出前沿决策冒充该回显。
+    tail = at_echo and not resume and not walk
     upto = pointer if resume else pointer - 1
     jump = None
     if resume:
@@ -107,13 +111,18 @@ def next_decision(raw, messages, pointer, script, env=None):
         decided = walk_target(script, messages, pointer, floor, consumed_bound, bound_receipts)
         if decided is not None:
             return decided[0], None, decided[1]
-    boundary = pointer if walk else (jump if resume else len(messages))
+    if tail:
+        decided = tail_advance(script, raw, env, messages, pointer, floor, baseline,
+                               consumed_bound, bound_receipts)
+        if decided is not None:
+            return decided
+    boundary = pointer if (walk or tail) else (jump if resume else len(messages))
     if resume:
         # jump 跨过的回执区间内可能夹压缩回显：它们对机器状态同样生效。
         for message in messages[pointer + 1:jump]:
             if message.get("role") == "assistant" and message_kind(message) == "compaction":
                 script.compacted()
-    script.entry_context["replay"] = walk
+    script.entry_context["replay"] = walk or tail
     timeline_before = set(script.stats["timeline"])
     consumed_before = len(script.consumed)
     pending = getattr(script, "compact_pending_decision", None)
@@ -143,7 +152,7 @@ def next_decision(raw, messages, pointer, script, env=None):
                       for phase, gate in (("analysis", "analysis_final_gate_ns"),
                                           ("eqclass", "eqclass_final_gate_ns"))
                       if advanced and gate in script.stats["timeline"] and gate not in timeline_before]
-    return decision, jump, {"case": "resume" if resume else "walk" if walk else "frontier",
+    return decision, jump, {"case": "resume" if resume else "walk" if walk else "tail" if tail else "frontier",
                             "pointer": pointer, "boundary": boundary, "jump": jump,
                             "compact": floor > 0,
                             "compact_floor": floor,

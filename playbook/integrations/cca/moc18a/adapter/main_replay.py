@@ -59,6 +59,33 @@ def trace_row(case, pointer, floor):
             "verified_call_ids": []}
 
 
+def rest_fingerprints(env, baseline):
+    """基线已覆盖的静息点文本指纹（own 链权威）：条目 machine.serial ≤ 基线
+    serial ＝基线状态已知该静息决策（渲染文本只按链指纹核对，不作状态来源）。"""
+    if baseline is None:
+        return set()
+    serial = (baseline.get("machine") or {}).get("serial")
+    return {entry["rest"]["waiting_text_sha256"] for entry in compact_state.verified_entries(env)
+            if (entry.get("machine") or {}).get("serial") <= serial}
+
+
+def echo_covered(script, message, consumed_bound, fingerprints):
+    """锚后回显是否已被恢复基线消费：已消费调用/待发·等待·终局重导/链内静息
+    文本＝跳过（绝不重步进、无副作用）；未覆盖＝须 step 核对的真实前沿。"""
+    pending = getattr(script, "compact_pending_decision", None)
+    if pending is not None and (pending_echo(pending, message)
+                                or compact_inflight_wait.is_wait_echo(pending, message)
+                                or terminal_echo(pending, message)):
+        return True
+    call = next((b for b in message.get("content") or []
+                 if isinstance(b, dict) and b.get("type") == "toolCall"), None)
+    if call is not None:
+        return call.get("id") in (consumed_bound or set())
+    if message_kind(message) != "main":
+        return True
+    return compact_state.canon(message_text(message)) in fingerprints
+
+
 def replay_retained(script, raw, env, messages, floor, upto, baseline):
     """重放锚后保留尾回显并逐字核对；返回（已消费集合, 绑定回执表）供 walk 判定。
 
@@ -93,6 +120,9 @@ def replay_retained(script, raw, env, messages, floor, upto, baseline):
             continue  # 等待回显＝本 lane 等待决策的确定性重导，不驱动机
         if terminal_echo(getattr(script, "compact_pending_decision", None), message):
             continue  # 终局回显＝已证完局终局决策的确定性重导，不驱动机
+        if baseline is not None and message_kind(message) == "main" \
+                and compact_state.canon(message_text(message)) in rest_fingerprints(env, baseline):
+            continue  # 基线前静息回显（OC 保留尾可早于锚检查点）：链指纹核对即跳过
         script.entry_context["replay"] = True
         decision = script.step(build_payload(raw, index))
         if not decision_matches(decision, message):
@@ -138,3 +168,38 @@ def walk_target(script, messages, pointer, floor, consumed_bound, bound_receipts
         return {"action": "text", "text": text, "verbatim": True}, trace_row(
             "walk-terminal-echo", pointer, floor)
     return None
+
+
+def tail_advance(script, raw, env, messages, pointer, floor, baseline, consumed_bound, bound_receipts):
+    """保留尾中段回显（其后仍有真实消息＝非裸重发，r256c row921 形状）：OC
+    保留尾可始于早于锚检查点的静息点。非主/待发/可指纹重构回绑回显按
+    walk_target 逐字重导；其余已消费回显按覆盖性跳至首个未覆盖边界，以该
+    边界真实决策应答（解释器在该边界对实际回显严格核对）；全已消费＝前沿
+    决策＋跳至末尾。未覆盖主回显返回 None＝由 boundary 流在该回显处 step
+    核对后原样应答（与裸重发同径，但绝不吞掉其后真实消息）。"""
+    message = messages[pointer]
+    call = next((b for b in message.get("content") or []
+                 if isinstance(b, dict) and b.get("type") == "toolCall"), None)
+    unbound_covered = (call is not None and call.get("id") in (consumed_bound or set())
+                       and call.get("id") not in bound_receipts)
+    if not unbound_covered:
+        decided = walk_target(script, messages, pointer, floor, consumed_bound, bound_receipts)
+        if decided is not None:
+            return decided[0], None, decided[1]
+        if not echo_covered(script, message, consumed_bound, rest_fingerprints(env, baseline)):
+            return None
+    for index in range(pointer + 1, len(messages)):
+        ahead = messages[index]
+        if ahead.get("role") != "assistant" or index < floor:
+            continue
+        if message_kind(ahead) == "compaction":
+            ref = compact_receipt.receipt_shaped(ahead, message_text)
+            if ref is not None:
+                compact_state.verify_ref(env, ref)
+            script.compacted()
+            continue
+        if echo_covered(script, ahead, consumed_bound, rest_fingerprints(env, baseline)):
+            continue
+        return script.step(build_payload(raw, index)), index, trace_row("tail-advance", index, floor)
+    boundary = len(messages)
+    return script.step(build_payload(raw, boundary)), boundary, trace_row("tail-advance", boundary, floor)
