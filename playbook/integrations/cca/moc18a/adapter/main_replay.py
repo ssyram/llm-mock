@@ -7,8 +7,10 @@
 锚前＝显式丢弃段，由调用方先跳锚，本模块只处理锚后保留尾。
 """
 import json
+import re
 
 import compact_inflight_wait
+import compact_machine
 import compact_receipt
 import compact_state
 from lane_context import build_payload, decision_matches, message_text
@@ -69,6 +71,35 @@ def rest_fingerprints(env, baseline):
             if (entry.get("machine") or {}).get("serial") <= serial}
 
 
+_SERIAL_OF_CALL = re.compile(r"\.s(\d+)$")
+
+
+def newer_rest_binding(env, baseline, text, seen_serial):
+    """同文本静息回显对更新 own 链条目的绑定（r256c 末 worker 回程丢失实证）。
+
+    静息文本可重复（active=1 在基线前后各出现一次）：仅按 ≤基线指纹跳过会把
+    基线后的同文本静息回显误当基线前噪声跳过，其后真实回执/回程不再被逐步
+    重放消费＝重建静默欠推导（无 drift 故障、无 faults 退出）。绑定条件全在
+    own 链与保留尾自身：条目经全链身份校验、serial 严格晚于基线且 ≤ 尾内已
+    见回显 serial（尾自身证实该静息前沿已发生）、静息指纹恰等于回显 canon。
+    命中＝机在该静息点自身的已验证真值（与锚同源同权），装配取代其后的逐条
+    重推导；未命中＝维持原路径（跳过或逐步重放）。锚语义与丢弃段法则不变。"""
+    if baseline is None or seen_serial is None:
+        return None
+    baseline_serial = (baseline.get("machine") or {}).get("serial") or 0
+    digest = compact_state.canon(text)
+    best = None
+    for entry in compact_state.verified_entries(env):
+        machine = entry.get("machine") or {}
+        serial = machine.get("serial") or 0
+        if entry.get("genesis") or serial <= baseline_serial or serial > seen_serial:
+            continue
+        if (entry.get("rest") or {}).get("waiting_text_sha256") == digest:
+            if best is None or serial > (best.get("machine") or {}).get("serial") or 0:
+                best = entry
+    return best
+
+
 def echo_covered(script, message, consumed_bound, fingerprints):
     """锚后回显是否已被恢复基线消费：已消费调用/待发·等待·终局重导/链内静息
     文本＝跳过（绝不重步进、无副作用）；未覆盖＝须 step 核对的真实前沿。"""
@@ -93,9 +124,16 @@ def replay_retained(script, raw, env, messages, floor, upto, baseline):
     """
     consumed_bound = set(script.consumed) if baseline is not None else None
     bound_receipts = {item["call_id"]: item for item in ((baseline or {}).get("receipts") or [])}
+    seen_serial = (baseline.get("machine") or {}).get("serial") if baseline is not None else None
     for index, message in enumerate(messages):
         if index > upto or message.get("role") != "assistant" or index < floor:
             continue
+        call = next((b for b in message.get("content") or []
+                     if isinstance(b, dict) and b.get("type") == "toolCall"), None)
+        if call is not None and call.get("id"):
+            found = _SERIAL_OF_CALL.search(str(call.get("id")))
+            if found and seen_serial is not None:
+                seen_serial = max(seen_serial, int(found.group(1)))
         if message_kind(message) == "compaction":
             ref = compact_receipt.receipt_shaped(message, message_text)
             if ref is not None:
@@ -104,8 +142,6 @@ def replay_retained(script, raw, env, messages, floor, upto, baseline):
             continue
         if message_kind(message) == "gate":
             continue
-        call = next((b for b in message.get("content") or []
-                     if isinstance(b, dict) and b.get("type") == "toolCall"), None)
         covered = consumed_bound is not None and call is not None and call.get("id") in consumed_bound
         if covered:
             held = bound_receipts.get(call.get("id"))
@@ -120,9 +156,16 @@ def replay_retained(script, raw, env, messages, floor, upto, baseline):
             continue  # 等待回显＝本 lane 等待决策的确定性重导，不驱动机
         if terminal_echo(getattr(script, "compact_pending_decision", None), message):
             continue  # 终局回显＝已证完局终局决策的确定性重导，不驱动机
-        if baseline is not None and message_kind(message) == "main" \
-                and compact_state.canon(message_text(message)) in rest_fingerprints(env, baseline):
-            continue  # 基线前静息回显（OC 保留尾可早于锚检查点）：链指纹核对即跳过
+        if baseline is not None and message_kind(message) == "main":
+            text = message_text(message)
+            if compact_state.canon(text) in rest_fingerprints(env, baseline):
+                bound = newer_rest_binding(env, baseline, text, seen_serial)
+                if bound is not None:
+                    compact_machine.apply_machine(script, bound["machine"])
+                    consumed_bound = set(script.consumed)
+                    seen_serial = (bound.get("machine") or {}).get("serial")
+                    continue
+                continue  # 基线前静息回显（OC 保留尾可早于锚检查点）：链指纹核对即跳过
         script.entry_context["replay"] = True
         decision = script.step(build_payload(raw, index))
         if not decision_matches(decision, message):
