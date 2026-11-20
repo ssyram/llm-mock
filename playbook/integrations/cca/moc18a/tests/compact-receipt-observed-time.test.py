@@ -19,10 +19,14 @@ import threading
 from pathlib import Path
 
 sys.dont_write_bytecode = True
+import os
 HERE = Path(__file__).resolve().parent
 ADAPTER_DIR = HERE.parent / "adapter"
 sys.path.insert(0, str(ADAPTER_DIR))
-import lane_context  # noqa: E402  (adds frozen-machine script paths)
+sys.path.insert(0, str(HERE))
+from cca_scripts_path import cca_scripts  # noqa: E402  (loud failure without an explicit CCA root)
+os.environ.setdefault("CCA_NEW_CCA_HOME", str(cca_scripts().parent))
+import lane_context  # noqa: E402  (adds checked-in adapter + CCA script paths)
 import opencode_tool_receipt  # noqa: E402
 import compact_genesis  # noqa: E402
 import compact_root_mint  # noqa: E402

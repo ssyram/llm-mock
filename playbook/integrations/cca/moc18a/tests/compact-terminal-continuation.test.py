@@ -34,6 +34,9 @@ sys.dont_write_bytecode = True
 HERE = Path(__file__).resolve().parent
 ADAPTER_DIR = HERE.parent / "adapter"
 sys.path.insert(0, str(ADAPTER_DIR))
+sys.path.insert(0, str(HERE))
+from cca_scripts_path import cca_scripts  # noqa: E402  (loud failure without an explicit CCA root)
+os.environ.setdefault("CCA_NEW_CCA_HOME", str(cca_scripts().parent))
 _fx = importlib.util.spec_from_file_location("compact_resume_fixture", HERE / "compact-resume-fixture.py")
 fx = importlib.util.module_from_spec(_fx)
 _fx.loader.exec_module(fx)

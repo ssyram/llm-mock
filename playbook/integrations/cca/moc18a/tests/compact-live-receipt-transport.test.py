@@ -14,8 +14,8 @@ metadata{output,exit,truncated},time}}]；a688 main.s7 completed exit0 仅作格
   唯一 part 匹配（call_id＋tool 名＋exact input＋属主会话）；completed+exit0→
   真实回执；pending/running→不推进；缺失/重复/错名/错参/异主/未知状态/截断＝
   fail loudly；error/非零 exit→isError 回执（原机 expect 拒绝）。
-- 适配器（exact0016 形状）：已发未覆盖 main.s7 经活体检索得真实输出→原机
-  expect 消费→恰产出 main.s8 agent 派发一次（与 cold oracle 逐字节一致）；
+- 适配器（exact0016 形状）：已发未覆盖 main.s8 经活体检索得真实输出→原机
+  expect 消费→恰产出 main.s9 agent 派发一次（与 cold oracle 逐字节一致）；
   同请求幂等、无 reserve 重发、链不增；wrongsession/call/tool/args/status 与
   unavailable/pending 的区分行为；trace 携带 receipt_via 观测来源（活体 OC 会话
   API 旁路，非模型可见 transcript，绝不冒充渲染结果）。
@@ -29,10 +29,14 @@ import threading
 from pathlib import Path
 
 sys.dont_write_bytecode = True
+import os
 HERE = Path(__file__).resolve().parent
 ADAPTER_DIR = HERE.parent / "adapter"
 sys.path.insert(0, str(ADAPTER_DIR))
-import lane_context  # noqa: E402  (adds frozen-machine script paths)
+sys.path.insert(0, str(HERE))
+from cca_scripts_path import cca_scripts  # noqa: E402  (loud failure without an explicit CCA root)
+os.environ.setdefault("CCA_NEW_CCA_HOME", str(cca_scripts().parent))
+import lane_context  # noqa: E402  (adds checked-in adapter + CCA script paths)
 import opencode_tool_receipt  # noqa: E402
 from cca_bench.suites.mock_results import MockFault  # noqa: E402
 
@@ -311,9 +315,9 @@ def main():
     aux1, _ = fx.ask(live, workspace, first_summary_request(
         chained_render("start", call1, enter_result(workspace))))
     prior = fx.reply_text(aux1)
-    renders = [state_result(workspace), '{"nodes": 4, "status": "ok"}',
+    renders = [state_result(workspace), "written", '{"nodes": 4, "status": "ok"}',
                '{"status": "ready"}', None]
-    for step in range(2, 6):
+    for step in range(2, 7):
         reply, _ = zero_tail(live, workspace, prior)
         call = fx.tool_call(reply)
         receipt = fx.synthesize_receipt(call, workspace)
@@ -333,8 +337,8 @@ def main():
     reply7, _ = fx.ask(live, workspace, [fx.main_system(), dict(MARKER), echo_of_text(prior),
                                          dict(echo6), dict(result6), {"role": "user", "content": CONTINUE}])
     call7 = fx.tool_call(reply7)
-    check("0013 保留形状: 消费 s6 → 发布 main.s7 bash reserve(实变量)",
-          bool(call7) and call7["id"] == "main.s7" and call7["name"] == "bash"
+    check("0013 保留形状: 消费 s7 → 发布 main.s8 bash reserve(实变量)",
+          bool(call7) and call7["id"] == "main.s8" and call7["name"] == "bash"
           and " reserve --session " + fx.ROOT_SESSION in call7["arguments"]["command"],
           json.dumps(reply7)[:200] if reply7.get("error") else "ok")
     replays.append((fx.echo_of(reply7), fx.synthesize_receipt(call7, workspace)))
@@ -342,20 +346,20 @@ def main():
     aux7, _ = fx.ask(live, workspace, summary_request(
         chained_render(CONTINUE, call6, state_result(workspace)), prior))
     prior = fx.reply_text(aux7)
-    check("0014 summary 后链=genesis[s1..s6]+已发含未覆盖 s7",
-          len(fx.checkpoint_entries(live)) == 7
-          and fx.checkpoint_entries(live)[-1]["emitted_decisions"][-1] == {"action": "tool", "id": "main.s7"},
+    check("0014 summary 后链=genesis[s1..s7]+已发含未覆盖 s8",
+          len(fx.checkpoint_entries(live)) == 8
+          and fx.checkpoint_entries(live)[-1]["emitted_decisions"][-1] == {"action": "tool", "id": "main.s8"},
           json.dumps(fx.checkpoint_entries(live)[-1]["emitted_decisions"][-2:]))
     pending = {"action": "tool", "id": call7["id"], "name": call7["name"],
                "arguments": call7.get("arguments") or {}}
     actual7 = fx.synthesize_receipt(call7, workspace)["content"][0]["text"]
 
-    # ================= exact0016：活体检索真实回执 → 恰一次 main.s8 派发 =================
+    # ================= exact0016：活体检索真实回执 → 恰一次 main.s9 派发 =================
     oracle_messages = [fx.main_system(), {"role": "user", "content": "start"}]
     for echo, receipt in replays:
         oracle_messages += [dict(echo), dict(receipt)]
     oracle_next, _ = fx.ask(cold, workspace, oracle_messages)
-    check("cold oracle: 消费 s7 真实回执后下一决策=agent 派发",
+    check("cold oracle: 消费 s8 真实回执后下一决策=agent 派发",
           bool(fx.tool_call(oracle_next)) and fx.tool_call(oracle_next)["name"] == "agent",
           json.dumps(oracle_next)[:160])
     STATE["messages"] = [native_tool_message(pending, actual7)]
@@ -363,8 +367,8 @@ def main():
     gets_before = STATE["gets"]
     reply16, _ = fx.ask(live, workspace, req16)
     call16 = fx.tool_call(reply16)
-    check("0016 活体检索: 真实回执→恰一次 main.s8 agent 派发(不等待/不重发 reserve)",
-          not reply16.get("error") and bool(call16) and call16["id"] == "main.s8"
+    check("0016 活体检索: 真实回执→恰一次 main.s9 agent 派发(不等待/不重发 reserve)",
+          not reply16.get("error") and bool(call16) and call16["id"] == "main.s9"
           and call16["name"] == "agent" and " reserve " not in json.dumps(call16.get("arguments") or {}),
           json.dumps(reply16)[:240] if reply16.get("error") else json.dumps(call16)[:160])
     check("0016 下一决策与 cold oracle 逐字节一致(原机 expect 同轨)",
@@ -373,18 +377,18 @@ def main():
     row16 = fx.trace_rows(live)[-1]
     via = row16.get("receipt_via") or {}
     check("0016 trace: live-receipt-advance＋receipt_via=活体 OC 会话 API 旁路(非模型可见)",
-          row16.get("case") == "live-receipt-advance" and row16.get("decision", {}).get("id") == "main.s8"
+          row16.get("case") == "live-receipt-advance" and row16.get("decision", {}).get("id") == "main.s9"
           and "waiting_receipt" not in row16
           and via.get("source") == "opencode-session-api" and via.get("model_visible") is False
-          and via.get("call_id") == "main.s7" and via.get("status") == "completed",
+          and via.get("call_id") == "main.s8" and via.get("status") == "completed",
           json.dumps({k: row16.get(k) for k in ("case", "decision", "receipt_via")})[:260])
     check("0016 每请求恰一次只读 GET(有界、零重试)", STATE["gets"] - gets_before == 1,
           "gets=%d" % (STATE["gets"] - gets_before))
-    check("0016 后链不增(不伪造静息点/不重复 reserve 进度)", len(fx.checkpoint_entries(live)) == 7)
+    check("0016 后链不增(不伪造静息点/不重复 reserve 进度)", len(fx.checkpoint_entries(live)) == 8)
     reply16b, _ = fx.ask(live, workspace, req16)
-    check("同请求幂等: 重放逐字节同答 main.s8、无重复 reserve、链稳定",
+    check("同请求幂等: 重放逐字节同答 main.s9、无重复 reserve、链稳定",
           not reply16b.get("error") and reply16b.get("content") == reply16.get("content")
-          and len(fx.checkpoint_entries(live)) == 7,
+          and len(fx.checkpoint_entries(live)) == 8,
           json.dumps(reply16b)[:200] if reply16b.get("error") else "ok")
 
     # ================= 负路径：wrongsession/call/tool/args/status、unavailable/pending =================
@@ -397,7 +401,7 @@ def main():
     write_ready(live, port)
     STATE["messages"] = [native_tool_message(dict(pending, id="main.s6"), actual7)]
     bad, _ = fx.ask(live, workspace, req16)
-    cases.append(("wrong call: 活库无 s7 part → missing 拒绝", bad, "compact_receipt_transport_missing"))
+    cases.append(("wrong call: 活库无该 call part → missing 拒绝", bad, "compact_receipt_transport_missing"))
     STATE["messages"] = [native_tool_message(dict(pending, name="agent"), actual7)]
     bad, _ = fx.ask(live, workspace, req16)
     cases.append(("wrong tool: part 名≠决策名 → mismatch", bad, "compact_receipt_transport_mismatch"))
@@ -418,7 +422,7 @@ def main():
     row_u = fx.trace_rows(live)[-1]
     check("unavailable: 死端口→如实等待不推进(trace 标 unavailable, 不崩)",
           not wait_u.get("error") and fx.tool_call(wait_u) is None
-          and "main.s7" in fx.reply_text(wait_u) and "not reissuing" in fx.reply_text(wait_u)
+          and "main.s8" in fx.reply_text(wait_u) and "not reissuing" in fx.reply_text(wait_u)
           and (row_u.get("receipt_transport") or {}).get("kind") == "unavailable"
           and row_u.get("case") == "wait-receipt", fx.reply_text(wait_u)[:120])
     write_ready(live, port)
@@ -431,7 +435,7 @@ def main():
           and row_p.get("case") == "wait-receipt", fx.reply_text(wait_p)[:120])
     STATE["messages"] = [native_tool_message(pending, actual7)]
     reply_done, _ = fx.ask(live, workspace, req16)
-    check("pending→completed: 同形状下一请求即以真实回执推进 main.s8",
+    check("pending→completed: 同形状下一请求即以真实回执推进 main.s9",
           not reply_done.get("error") and fx.tool_call(reply_done) == fx.tool_call(reply16),
           json.dumps(reply_done)[:160])
     check("全程无 reserve 重发: 所有 0016 应答均无 bash reserve toolCall",

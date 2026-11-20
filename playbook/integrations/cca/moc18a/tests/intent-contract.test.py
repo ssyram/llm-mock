@@ -6,13 +6,14 @@
 intent_head 的真正旧归档包逐字重放；lane 夹具安装缺省文本在 spec.mock 预算
 条款内、外部材料经 CCA_NEW_INTENT_MD 显式且不可读即硬错。
 部署：固定提交导出（CCA_MOCK18A_SUT）下，真实 `get-task-context` 冻结包
-（部署版 build_package 携带 intent_head）经 PilotWorkerBook 两步引导真实
+（部署版 build_package 携带 intent_head）经 WaitWorkerBook 两步引导真实
 _compile（读盘 inputs/context.json）触发合并后 TapedDeltaBook 生产 draw；
 findings 落 findings.json 后用导出 TraceFixture 生成的 finish 命令原样执行
 （真子进程；task/operation 三例互异防接受缓存假绿；trace 逐条落盘留证）：
 正例诚实 Mock findings 接受，缺 intent_compliance 与 malformed opening
 双负例被真实 CLI 拒绝（exit 2 + status error + GateRejection）。
-外部输入：CCA_MOCK18A_SUT（部署导出根）、CCA_MOCK18A_PILOT；未提供即跳过。
+外部输入：CCA_MOCK18A_SUT（部署导出根）；未提供即跳过。pilot 依赖已由
+入库 adapter（case_body/worker_wait）替换，无需任何私有包。
 """
 import json
 import os
@@ -24,12 +25,11 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 DOMAIN = Path(__file__).resolve().parents[1]
 SUT = os.environ.get("CCA_MOCK18A_SUT")
-PILOT = os.environ.get("CCA_MOCK18A_PILOT")
 TRACE_DIR = Path(os.environ.get("INTENT_DEPLOY_TRACE") or tempfile.mkdtemp(prefix="intent-trace-"))
 
 
-if SUT and PILOT:
-    sys.path[:0] = [str(DOMAIN), str(Path(SUT) / "scripts"), str(PILOT), str(Path(SUT) / "scripts" / "tests")]
+if SUT:
+    sys.path[:0] = [str(DOMAIN), str(Path(SUT) / "scripts"), str(Path(SUT) / "scripts" / "tests")]
     from cca_v2_fixture import Fixture
     from cca_v2_trace_fixture import TraceFixture
     from adapter.intent_material import OPENING
@@ -37,8 +37,8 @@ if SUT and PILOT:
     from lane_context import TapeLedger
     from cca_bench.suites.mock_faults import Injection
     from cca_bench.suites.mock_results import MockFault
-    from pilot.case_body import pilot_budgets, pilot_level
-    from pilot.worker_wait import PilotWorkerBook
+    from adapter.case_body import pilot_budgets, pilot_level
+    from adapter.worker_wait import WaitWorkerBook
     LEVEL = pilot_level(2, 2, 0)
 
     def taped(tape=None):
@@ -59,7 +59,7 @@ if SUT and PILOT:
         package = json.loads(context.read_text(encoding="utf-8"))
         assert "intent_head" in package, "deployed package must be staged (carry intent_head)"
         deltas = TapedDeltaBook(LEVEL, "seed-deploy", 2, 0, pilot_budgets(LEVEL, 2, 0, 60, 0, 0), tape=None, notes=[])
-        workers = PilotWorkerBook(LEVEL.name, deltas, TapeLedger(Path(tempfile.mkdtemp(prefix="ledger-"))), f.workspace.resolve(), "test-root", "product", Injection())
+        workers = WaitWorkerBook(LEVEL.name, deltas, TapeLedger(Path(tempfile.mkdtemp(prefix="ledger-"))), f.workspace.resolve(), "test-root", "product", Injection())
         workers.expect(task_id, "analysis")
         session, tag = "ses-deploy-child", {"task": task_id, "phase": "analysis"}
         one = workers.step({"session_id": session}, tag)
@@ -89,7 +89,7 @@ def tape_for(findings):
                          "plannedSleepNs": 555_000_000, "record": {"planned": {"facts": 0}}, "findings": findings}]}
 
 
-@unittest.skipUnless(SUT and PILOT, "CCA_MOCK18A_SUT/CCA_MOCK18A_PILOT not provided")
+@unittest.skipUnless(SUT, "CCA_MOCK18A_SUT not provided")
 class IntentContractUnitTest(unittest.TestCase):
     def test_unit_contract(self):
         workspace = workspace_with_intent()
@@ -127,7 +127,7 @@ class IntentContractUnitTest(unittest.TestCase):
 
 
 
-@unittest.skipUnless(SUT and PILOT, "CCA_MOCK18A_SUT/CCA_MOCK18A_PILOT not provided")
+@unittest.skipUnless(SUT, "CCA_MOCK18A_SUT not provided")
 class DeployedSubmitTest(unittest.TestCase):
     def setUp(self):
         self.trace = TRACE_DIR / ("trace-%s.jsonl" % self.id().rsplit(".", 1)[-1])

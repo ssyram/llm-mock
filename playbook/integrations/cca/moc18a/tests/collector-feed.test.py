@@ -16,14 +16,15 @@ from unittest.mock import patch
 
 sys.dont_write_bytecode = True
 DOMAIN = Path(__file__).resolve().parents[1]
-PROJECT = Path('/Users/ssyram/workspace/work-fv/c-code-verify/.local/analysis-decouple')
-EVIDENCE = PROJECT / '.pi/npr/l4b'
-sys.path[:0] = [str(DOMAIN), str(PROJECT / '.local/cca-newtree-sut-20261117/scripts'),
-                str(PROJECT / '.pi/research/gate-latency-mock-148')]
+from cca_scripts_path import cca_scripts
+
+sys.path[:0] = [str(DOMAIN), str(cca_scripts())]
+# 历史 l4b 证据包不入库：经 MOC18A_EVIDENCE_DIR 显式给出，缺则本文件显式 skip（不造数据）。
+EVIDENCE = Path(os.environ['MOC18A_EVIDENCE_DIR']) if os.environ.get('MOC18A_EVIDENCE_DIR') else None
 
 from adapter.collect_terminal import collect_terminal
 from adapter.spec_graph import consume_graph_spec
-from pilot.case_body import pilot_budgets, pilot_level
+from adapter.case_body import pilot_budgets, pilot_level
 import collect_run
 
 BASE_NS = 1_795_100_000_000_000_000
@@ -85,11 +86,13 @@ def run_collect(lane_root):
     snapshot = {"state": json.loads((EVIDENCE / 'final-state.json').read_text(encoding='utf-8'))["state"]}
     with patch("collect_run.ProductCLI",
                lambda *args, **kwargs: SimpleNamespace(service_snapshot=lambda: snapshot)):
-        collect_terminal(PROJECT / '.local/cca-newtree-sut-20261117', lane_root, lane, graph,
+        collect_terminal(cca_scripts().parent, lane_root, lane, graph,
                          level, budgets, spec['seed'], True, None)
     return json.loads((lane_root / 'result.json').read_text(encoding='utf-8'))
 
 
+@unittest.skipUnless(EVIDENCE and EVIDENCE.is_dir(),
+                     'historical l4b evidence pack required: set MOC18A_EVIDENCE_DIR (private, not in repo)')
 class CollectorFeedTest(unittest.TestCase):
     def test_real_native_records_with_full_observations_pass_the_original_collector(self):
         with tempfile.TemporaryDirectory() as tmp:

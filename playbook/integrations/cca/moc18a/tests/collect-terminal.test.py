@@ -8,9 +8,9 @@ from unittest.mock import mock_open, patch
 
 sys.dont_write_bytecode = True
 DOMAIN = Path(__file__).resolve().parents[1]
-PROJECT = Path('/Users/ssyram/workspace/work-fv/c-code-verify/.local/analysis-decouple')
-sys.path[:0] = [str(DOMAIN), str(PROJECT / '.local/cca-newtree-sut-20261117/scripts'),
-                str(PROJECT / '.pi/research/gate-latency-mock-148')]
+from cca_scripts_path import cca_scripts
+
+sys.path[:0] = [str(DOMAIN), str(cca_scripts())]
 
 from adapter.collect_terminal import (DeltaEvidence, actual_worker_records, collect_terminal,
                                       first_tape_fault, terminal_message)
@@ -18,7 +18,7 @@ from adapter.aux_step import latest_main_verdict
 from adapter.main_step import terminal_reply
 from adapter.phase_entry import phase_entry
 from adapter.worker_step import assistant_reply
-from pilot.case_body import pilot_budgets, pilot_level
+from adapter.case_body import pilot_budgets, pilot_level
 
 
 class TerminalCollectionTest(unittest.TestCase):

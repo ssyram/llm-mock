@@ -27,6 +27,9 @@ sys.dont_write_bytecode = True
 HERE = Path(__file__).resolve().parent
 ADAPTER = HERE.parent / "adapter"
 sys.path.insert(0, str(ADAPTER))
+sys.path.insert(0, str(HERE))
+from cca_scripts_path import cca_scripts  # noqa: E402  (loud failure without an explicit CCA root)
+os.environ.setdefault("CCA_NEW_CCA_HOME", str(cca_scripts().parent))
 
 
 def load(name):

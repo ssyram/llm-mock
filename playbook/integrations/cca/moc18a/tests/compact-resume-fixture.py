@@ -23,6 +23,8 @@ DOMAIN = Path(__file__).resolve().parents[1]
 ADAPTER = DOMAIN / "adapter"
 
 ROOT_SESSION = "ses_compactfixturemain"
+FIXTURE_INTENT_MD = ("# Intent (compact fixture)\n\n## 用户意图与需求\n"
+                     "合成夹具用户条款：按 spec 图完成两阶段交付；随机发现只在 spec.mock 预算内。\n")
 MARKER = "What did we do so far?"
 MAIN_TOOLS = ("agent", "bash", "fsm_enter_fsm", "fsm_exit_fsm", "fsm_fsm_get_state",
               "fsm_fsm_submit_self_check", "fsm_fsm_try_transition", "write")
@@ -66,6 +68,10 @@ def build_lane(base, name, workspace):
     lane = base / name
     (lane / "records").mkdir(parents=True)
     (lane / "fsm-slots").mkdir()
+    # 与生产 lane 同契约：预备者身份安装权威 intent.md（IntentMainScript prepare
+    # write 与 worker 实读都消费它；缺失即 MockFault，不降级）。
+    (workspace / "_cca_analysis").mkdir(parents=True, exist_ok=True)
+    (workspace / "_cca_analysis" / "intent.md").write_text(FIXTURE_INTENT_MD, encoding="utf-8")
     vars_ = initial_vars(workspace)
     spec = {"mode": "fullset", "seed": 202611190, "graph_size": 4, "entries": None,
             "parallel": 2, "batch": 16, "nodes": ["n0", "n1", "n2", "n3"],
