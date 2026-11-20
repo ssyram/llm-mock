@@ -18,18 +18,38 @@ ref 与落盘时间外的规范摘要）：ref 是本地链的外键，不承载
 重放绑定回执重建进度（compact_genesis_binding）。摘要文本只声明压缩发生
 过，从不作为恢复依据；恢复路径不反序列化任何对象（见 compact_machine）。
 """
+import copy
 import hashlib
 import json
 import time
 from pathlib import Path
 
-from compact_checkpoint_store import read_checkpoint, resolve_entry, write_chain
+from compact_checkpoint_store import (CHECKPOINT_NAME, read_checkpoint,
+                                     resolve_entry, write_chain)
 from compact_machine import apply_machine, snapshot_script, validate_machine
 
 ADAPTER_FILES = ("lane_context.py", "main_step.py", "aux_step.py", "compact_state.py",
                  "compact_receipt.py", "compact_machine.py", "compact_genesis.py",
                  "compact_genesis_binding.py", "compact_checkpoint_store.py",
                  "compact_root_mint.py", "compact_inflight_wait.py", "main_replay.py")
+
+# 进程内验证快照缓存：identity＝(resolved records, resolved root, root_session)
+# ＋ spec 内容摘要＋检查点文件 stat。根模块代码在本进程内不可变（launch pin：
+# 挂载进程只加载一份 adapter），adapter 指纹按进程记一次；spec/检查点任何
+# 写入（own 或外部）都改变 stat（dev/ino/mtime_ns/ctime_ns/size；ctime 不可
+# 由 utime 伪造），同 stat 不同内容无写不可能。命中只复用“已全量校验”的不变
+# 快照的严格拷贝；不缓存 aux 裁决/活体 GET/proof（它们跨请求必须新鲜）。
+_ADAPTER_IDENTITIES = None
+_SPEC_SHA = {}
+_VERIFIED_SNAPSHOT = {}
+
+
+def _file_stat(path):
+    try:
+        info = Path(path).stat()
+    except OSError:
+        return None
+    return (info.st_dev, info.st_ino, info.st_mtime_ns, info.st_ctime_ns, info.st_size)
 
 
 def canon(value):
@@ -52,8 +72,29 @@ def entry_ref(entry):
 
 
 def adapter_identities():
-    here = Path(__file__).resolve().parent
-    return {name: file_sha256(here / name) for name in ADAPTER_FILES}
+    # launch pin：根模块代码进程内不可变，指纹只算一次；跨版本基线各自在
+    # 独立进程中重铸链（链内 adapters 哈希与该进程实际代码一致）。
+    global _ADAPTER_IDENTITIES
+    if _ADAPTER_IDENTITIES is None:
+        here = Path(__file__).resolve().parent
+        _ADAPTER_IDENTITIES = {name: file_sha256(here / name) for name in ADAPTER_FILES}
+    return _ADAPTER_IDENTITIES
+
+
+def spec_sha256(env):
+    """spec 内容指纹，按 stat 记忆（任何写入改 stat；诚实缺文件仍由读取报错）。"""
+    path = Path(env["root"]) / "input-spec.json"
+    key = (str(path.resolve()), _file_stat(path))
+    sha = _SPEC_SHA.get(key)
+    if sha is None:
+        sha = file_sha256(path)
+        _SPEC_SHA[key] = sha
+    return sha
+
+
+def _snapshot_key(env):
+    return (str(Path(env["records"]).resolve()), str(Path(env["root"]).resolve()),
+            env["root_session"])
 
 
 def _entry_rest_key(entry):
@@ -77,7 +118,7 @@ def write_rest_checkpoint(env, script, decision):
         return None
     entry = {
         "session": env["root_session"],
-        "spec_sha256": file_sha256(env["root"] / "input-spec.json"),
+        "spec_sha256": spec_sha256(env),
         "adapters": adapter_identities(),
         "rest": {"serial": script.serial,
                  "consumed_tail": (script.consumed[-1] if script.consumed else None),
@@ -99,6 +140,7 @@ def write_rest_checkpoint(env, script, decision):
     else:
         entries = [entry]
     write_chain(directory, entries)
+    _VERIFIED_SNAPSHOT.pop(_snapshot_key(env), None)  # own write：整链换新，命中作废
     return entry
 
 
@@ -109,7 +151,7 @@ def validate_entry(entry, env):
     if entry.get("session") != env["root_session"]:
         raise _fault("compact_checkpoint_foreign",
                      "checkpoint session %r is not this lane root session" % (entry.get("session"),))
-    if entry.get("spec_sha256") != file_sha256(env["root"] / "input-spec.json"):
+    if entry.get("spec_sha256") != spec_sha256(env):
         raise _fault("compact_checkpoint_spec", "input-spec fingerprint mismatch")
     adapters = entry.get("adapters")
     if not isinstance(adapters, dict) or adapters != adapter_identities():
@@ -130,13 +172,26 @@ def validate_entry(entry, env):
 
 
 def verified_entries(env):
-    """读取并整链身份校验（session/spec/adapters/ref＋域校验）＝own 链唯一入口。"""
+    """读取并整链身份校验（session/spec/adapters/ref＋域校验）＝own 链唯一入口。
+
+    首读校验全部条目并缓存不变快照；同进程同身份（records/root/session/spec
+    ＋检查点 stat）命中复用快照的严格拷贝（apply_machine 装配会别名 machine
+    可变列表，恢复方写穿不得污染缓存；外部/own 写入、外来 env/spec 变更都
+    使 stat/identity 失配→重新整链校验，绝不跳过或弱化任何检查）。
+    """
+    key = _snapshot_key(env)
+    stat = _file_stat(Path(env["records"]) / CHECKPOINT_NAME)
+    spec = spec_sha256(env)
+    cached = _VERIFIED_SNAPSHOT.get(key)
+    if cached is not None and stat is not None and cached[0] == stat and cached[1] == spec:
+        return copy.deepcopy(cached[2])
     entries = read_checkpoint(env["records"])
     if entries is None:
         raise _fault("compact_checkpoint_missing",
                      "compaction marker present but no rest checkpoint in lane records")
     for entry in entries:
         validate_entry(entry, env)
+    _VERIFIED_SNAPSHOT[key] = (stat, spec, copy.deepcopy(entries))
     return entries
 
 
